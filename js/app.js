@@ -4,7 +4,7 @@
 
 function navigate(page) {
     if (!requireAuth()) return;
-    const managerPages = ['staff'];
+    const managerPages = ['staff', 'activity'];
     if (managerPages.includes(page) && !isManager()) {
         showToast('This section is available to the manager only.', 'error');
         return;
@@ -27,7 +27,8 @@ function navigate(page) {
         cashout: 'Cash Out',
         balances: 'Balances',
         reports: 'Reports',
-        staff: 'Staff Access'
+        staff: 'Staff Access',
+        activity: 'Activity Log'
     };
     document.getElementById('pageTitle').innerHTML = (titles[page] || 'Dashboard') + ' <small>' + 
         (page === 'dashboard' ? 'overview' : '') + '</small>';
@@ -40,6 +41,7 @@ function navigate(page) {
     if (page === 'balances') renderBalances();
     if (page === 'reports') generateReport();
     if (page === 'staff') renderStaff();
+    if (page === 'activity') renderActivityLog();
 
     // Close sidebar on mobile
     if (window.innerWidth <= 768) {

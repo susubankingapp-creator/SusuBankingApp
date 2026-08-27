@@ -298,15 +298,71 @@ async function enterApp() {
     updateUserIdentity();
     renderAll();
     navigate('dashboard');
+    resetIdleTimer();
     return true;
 }
 
 function logout() {
+    stopIdleTimer();
     if (cloudReady()) supabaseClient.auth.signOut();
     clearSession();
     document.querySelectorAll('.modal-overlay.open').forEach(modal => modal.classList.remove('open'));
     showAuthScreen('login');
     showAuthMessage('You have been signed out.');
+}
+
+const IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+const IDLE_WARNING_MS = 60 * 1000;
+let idleTimer = null;
+let idleWarningTimer = null;
+
+function resetIdleTimer() {
+    if (!isAuthenticated()) return;
+    clearTimeout(idleTimer);
+    clearTimeout(idleWarningTimer);
+    idleWarningTimer = setTimeout(() => {
+        showToast('You will be signed out soon due to inactivity.', 'warning');
+    }, IDLE_TIMEOUT_MS - IDLE_WARNING_MS);
+    idleTimer = setTimeout(() => {
+        logout();
+        showAuthMessage('You were signed out after 20 minutes of inactivity.');
+    }, IDLE_TIMEOUT_MS);
+}
+
+function stopIdleTimer() {
+    clearTimeout(idleTimer);
+    clearTimeout(idleWarningTimer);
+}
+
+['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(eventName => {
+    document.addEventListener(eventName, resetIdleTimer, { passive: true });
+});
+
+async function renderActivityLog() {
+    const body = document.getElementById('activityTableBody');
+    const label = document.getElementById('activityTotalLabel');
+    if (!body) return;
+    if (!cloudReady()) {
+        body.innerHTML = '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-list-check"></i><h3>Cloud access required</h3><p>Activity history is available when connected to Supabase.</p></div></td></tr>';
+        if (label) label.textContent = '0 entries';
+        return;
+    }
+    const { data: rows, error } = await supabaseClient
+        .from('audit_log')
+        .select('id, action, entity, entity_id, created_at, actor:profiles(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(200);
+    if (error) {
+        body.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fas fa-triangle-exclamation"></i><h3>Unable to load activity</h3><p>${escapeHtml(cloudError(error))}</p></div></td></tr>`;
+        return;
+    }
+    if (!rows || !rows.length) {
+        body.innerHTML = '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-list-check"></i><h3>No activity yet</h3><p>Actions will appear here as they happen.</p></div></td></tr>';
+        if (label) label.textContent = '0 entries';
+        return;
+    }
+    body.innerHTML = rows.map(row => `<tr><td>${escapeHtml(new Date(row.created_at).toLocaleString())}</td><td>${escapeHtml(row.actor?.full_name || 'Unknown')}</td><td>${escapeHtml(row.action)}</td><td>${escapeHtml(row.entity)}${row.entity_id ? ` #${escapeHtml(String(row.entity_id))}` : ''}</td></tr>`).join('');
+    if (label) label.textContent = `${rows.length} entries`;
 }
 
 function updateUserIdentity() {

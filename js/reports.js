@@ -191,7 +191,7 @@ function exportSummaryReport() {
         Number(transaction.amount).toFixed(2),
         transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy
     ])];
-    const csv = rows.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = rowsToCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const download = document.createElement('a');
     download.href = url;
@@ -278,9 +278,7 @@ function getCustomerReportRows(customer) {
 }
 
 function customerReportCsv(customer) {
-    return getCustomerReportRows(customer)
-        .map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(','))
-        .join('\n');
+    return rowsToCsv(getCustomerReportRows(customer));
 }
 
 function exportCustomerReport() {

@@ -32,6 +32,12 @@ function saveData() {
     if (!cloudReady()) localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     updateBadges();
     updateDashboard();
+    if (cloudReady()) {
+        refreshCustomerBalances().then(() => {
+            renderCustomers();
+            renderBalances();
+        }).catch(() => { /* keep the existing client-computed balances on failure */ });
+    }
 }
 
 // Global data object
@@ -50,6 +56,7 @@ async function hydrateCloudData() {
         transactions: (transactions || []).map(transaction => mapCloudTransaction(transaction))
     };
     nextId = getNextId();
+    await refreshCustomerBalances();
 }
 
 async function cloudAddCustomer(customer) {
@@ -139,12 +146,37 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
+// Prefixes a leading quote to defuse spreadsheet formula injection (=, +, -, @).
+function sanitizeCsvValue(value) {
+    const text = String(value ?? '');
+    return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
+
+function rowsToCsv(rows) {
+    return rows.map(row => row.map(value => `"${sanitizeCsvValue(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
 function getCustomerName(id) {
     const c = data.customers.find(c => c.id === id);
     return c ? c.name : 'Unknown';
 }
 
+let customerBalanceCache = null;
+
+async function refreshCustomerBalances() {
+    if (!cloudReady()) {
+        customerBalanceCache = null;
+        return;
+    }
+    const { data: rows, error } = await supabaseClient.from('customer_balances').select('customer_id, total_in, total_out, balance');
+    if (error) { console.error(error); return; }
+    const map = new Map();
+    (rows || []).forEach(row => map.set(row.customer_id, { totalIn: Number(row.total_in), totalOut: Number(row.total_out), balance: Number(row.balance) }));
+    customerBalanceCache = map;
+}
+
 function getCustomerBalance(customerId) {
+    if (customerBalanceCache?.has(customerId)) return customerBalanceCache.get(customerId).balance;
     const ins = data.transactions.filter(t => t.customerId === customerId && t.type === 'cashIn');
     const outs = data.transactions.filter(t => t.customerId === customerId && t.type === 'cashOut');
     const totalIn = ins.reduce((s, t) => s + Number(t.amount), 0);
@@ -153,6 +185,10 @@ function getCustomerBalance(customerId) {
 }
 
 function getCustomerTotals(customerId) {
+    if (customerBalanceCache?.has(customerId)) {
+        const cached = customerBalanceCache.get(customerId);
+        return { totalIn: cached.totalIn, totalOut: cached.totalOut };
+    }
     const ins = data.transactions.filter(t => t.customerId === customerId && t.type === 'cashIn');
     const outs = data.transactions.filter(t => t.customerId === customerId && t.type === 'cashOut');
     return {

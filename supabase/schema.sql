@@ -79,6 +79,20 @@ create index if not exists transactions_date_idx on public.transactions(date des
 create index if not exists transactions_customer_idx on public.transactions(customer_id);
 create index if not exists transactions_staff_idx on public.transactions(staff_id);
 
+-- Aggregates each customer's totals server-side so the browser does not need
+-- to download every transaction row just to display a balance.
+create or replace view public.customer_balances as
+select
+    c.id as customer_id,
+    coalesce(sum(case when t.type = 'cashIn' then t.amount else 0 end), 0) as total_in,
+    coalesce(sum(case when t.type = 'cashOut' then t.amount else 0 end), 0) as total_out,
+    coalesce(sum(case when t.type = 'cashIn' then t.amount else -t.amount end), 0) as balance
+from public.customers c
+left join public.transactions t on t.customer_id = c.id
+group by c.id;
+
+grant select on public.customer_balances to authenticated;
+
 create or replace function public.current_role()
 returns public.app_role
 language sql stable security definer set search_path = public

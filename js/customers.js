@@ -117,6 +117,9 @@ async function deleteCustomer(id) {
     showToast(`Customer "${c.name}" removed.`, 'warning');
 }
 
+const CUSTOMERS_PER_PAGE = 25;
+let customerPage = 1;
+
 function renderCustomers() {
     const tbody = document.getElementById('customerTableBody');
     if (!tbody) return;
@@ -144,15 +147,21 @@ function renderCustomers() {
         `;
         const label = document.getElementById('customerTotalLabel');
         if (label) label.textContent = '0 customers';
+        renderCustomerPagination(0);
         return;
     }
 
+    const totalPages = Math.max(1, Math.ceil(filtered.length / CUSTOMERS_PER_PAGE));
+    if (customerPage > totalPages) customerPage = totalPages;
+    const start = (customerPage - 1) * CUSTOMERS_PER_PAGE;
+    const pageItems = filtered.slice(start, start + CUSTOMERS_PER_PAGE);
+
     let html = '';
-    filtered.forEach((c, idx) => {
+    pageItems.forEach((c, idx) => {
         const balance = getCustomerBalance(c.id);
         html += `
             <tr>
-                <td>${idx + 1}</td>
+                <td>${start + idx + 1}</td>
                 <td><strong>${escapeHtml(c.name)}</strong></td>
                 <td>${escapeHtml(c.pbNumber || c.id || '—')}</td>
                 <td>${escapeHtml(c.nextOfKin || '—')}</td>
@@ -171,17 +180,44 @@ function renderCustomers() {
     tbody.innerHTML = html;
     const label = document.getElementById('customerTotalLabel');
     if (label) label.textContent = `${filtered.length} customers`;
+    renderCustomerPagination(totalPages);
 }
 
-function filterCustomers() {
+function renderCustomerPagination(totalPages) {
+    const container = document.getElementById('customerPagination');
+    if (!container) return;
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = `
+        <button class="btn btn-outline btn-xs" type="button" onclick="goToCustomerPage(${customerPage - 1})" ${customerPage <= 1 ? 'disabled' : ''}>Prev</button>
+        <span class="pagination-status">Page ${customerPage} of ${totalPages}</span>
+        <button class="btn btn-outline btn-xs" type="button" onclick="goToCustomerPage(${customerPage + 1})" ${customerPage >= totalPages ? 'disabled' : ''}>Next</button>
+    `;
+}
+
+function goToCustomerPage(page) {
+    customerPage = page;
     renderCustomers();
+}
+
+let customerSearchDebounce = null;
+function filterCustomers() {
+    clearTimeout(customerSearchDebounce);
+    customerSearchDebounce = setTimeout(() => {
+        customerPage = 1;
+        renderCustomers();
+    }, 200);
 }
 
 function refreshCustomers() {
     const search = document.getElementById('customerSearch');
     if (search) search.value = '';
+    customerPage = 1;
     renderCustomers();
 }
+
 
 function populateCustomerDropdowns() {
     const selects = ['cashinCustomer', 'cashoutCustomer'];

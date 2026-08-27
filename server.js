@@ -15,7 +15,23 @@ const admin = cloudConfigured
     ? createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
     : null;
 
-app.use(helmet({ contentSecurityPolicy: false }));
+const supabaseOrigin = supabaseUrl ? (() => { try { return new URL(supabaseUrl).origin; } catch (_) { return null; } })() : null;
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://fonts.gstatic.com'],
+            imgSrc: ["'self'", 'data:'],
+            connectSrc: ["'self'", ...(supabaseOrigin ? [supabaseOrigin] : [])],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            frameAncestors: ["'self'"]
+        }
+    }
+}));
 const corsOrigin = process.env.CORS_ORIGIN?.trim();
 if (corsOrigin) app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '1mb' }));

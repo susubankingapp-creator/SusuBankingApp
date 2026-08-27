@@ -83,6 +83,9 @@
             <a data-page="staff" data-manager-only onclick="navigate('staff')">
                 <i class="fas fa-user-shield"></i> Staff Access
             </a>
+            <a data-page="activity" data-manager-only onclick="navigate('activity')">
+                <i class="fas fa-list-check"></i> Activity Log
+            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -246,6 +249,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="pagination" id="customerPagination"></div>
                     </div>
                 </div>
             </section>
@@ -447,6 +451,16 @@
                 </div>
                 <div class="card"><div class="card-header"><h2><i class="fas fa-user-shield"></i> Staff Accounts</h2><span class="text-muted fs-small" id="staffTotalLabel">0 active staff</span></div>
                     <div class="card-body p-0"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Status</th><th style="text-align:center;">Actions</th></tr></thead><tbody id="staffTableBody"></tbody></table></div></div>
+                </div>
+            </section>
+
+            <section class="page" id="page-activity">
+                <div class="flex-between mb-16" style="flex-wrap:wrap;gap:12px;">
+                    <div><h2 class="section-title">Activity log</h2><p class="section-description">Recent account and transaction actions for oversight.</p></div>
+                    <button class="btn btn-outline btn-sm" onclick="renderActivityLog()"><i class="fas fa-sync"></i> Refresh</button>
+                </div>
+                <div class="card"><div class="card-header"><h2><i class="fas fa-list-check"></i> Recent Activity</h2><span class="text-muted fs-small" id="activityTotalLabel">0 entries</span></div>
+                    <div class="card-body p-0"><div class="table-wrap"><table><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th></tr></thead><tbody id="activityTableBody"></tbody></table></div></div>
                 </div>
             </section>
 
