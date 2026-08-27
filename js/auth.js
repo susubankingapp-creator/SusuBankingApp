@@ -117,6 +117,10 @@ function setAuthMode(mode) {
     document.getElementById('authMode').value = 'login';
 }
 
+function getCloudLoginEmail(username) {
+    return username.includes('@') ? username : `${username}@femmanuel85.local`;
+}
+
 async function requestPasswordReset() {
     const username = document.getElementById('authUsername').value.trim().toLowerCase();
     if (!username) {
@@ -151,7 +155,7 @@ async function completePasswordRecovery() {
 async function submitAuth(event) {
     event.preventDefault();
     const mode = document.getElementById('authMode').value;
-    const name = document.getElementById('authName').value.trim();
+    const name = document.getElementById('authName')?.value.trim() || '';
     const username = document.getElementById('authUsername').value.trim().toLowerCase();
     const password = document.getElementById('authPassword').value;
     const button = document.getElementById('authSubmit');
@@ -162,9 +166,11 @@ async function submitAuth(event) {
     }
 
     button.disabled = true;
+    button.textContent = 'Signing in...';
+    showAuthMessage('');
     try {
         if (cloudReady()) {
-            const email = username.includes('@') ? username : `${username}@femmanuel85.local`;
+            const email = getCloudLoginEmail(username);
             if (mode === 'setup') {
                 const { data: result, error } = await supabaseClient.auth.signUp({ email, password });
                 if (error) throw error;
@@ -175,13 +181,13 @@ async function submitAuth(event) {
                 if (profileError) throw profileError;
                 localStorage.setItem(SETUP_COMPLETE_KEY, 'true');
                 await setCloudSession(result.session, profile);
-                enterApp();
+                if (!await enterApp()) await supabaseClient.auth.signOut();
                 showToast('Manager account created.', 'success');
             } else {
                 const { data: result, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 await loadCloudProfile(result.user);
-                enterApp();
+                if (!await enterApp()) await supabaseClient.auth.signOut();
             }
             return;
         }
@@ -212,6 +218,7 @@ async function submitAuth(event) {
         showAuthMessage(cloudReady() ? cloudError(error, 'Unable to sign in.') : 'Unable to sign in.');
     } finally {
         button.disabled = false;
+        button.textContent = 'Sign in';
     }
 }
 
@@ -279,18 +286,19 @@ async function changePassword(event) {
 }
 
 async function enterApp() {
-    hideAuthScreen();
-    applyRoleAccess();
-    updateUserIdentity();
     try {
         await hydrateCloudData();
         if (cloudReady() && isManager()) await loadCloudStaff();
     } catch (error) {
         showAuthMessage(cloudError(error, 'Unable to load cloud data.'));
-        return;
+        return false;
     }
+    hideAuthScreen();
+    applyRoleAccess();
+    updateUserIdentity();
     renderAll();
     navigate('dashboard');
+    return true;
 }
 
 function logout() {
