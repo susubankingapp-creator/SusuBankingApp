@@ -17,8 +17,8 @@ function openCustomerModal(customerId) {
             document.getElementById('customerName').value = c.name || '';
             document.getElementById('customerPbNumber').value = c.pbNumber || c.id || '';
             document.getElementById('customerNextOfKin').value = c.nextOfKin || '';
-            document.getElementById('customerNextOfKinPhone').value = c.nextOfKinPhone || '';
-            document.getElementById('customerPhone').value = c.phone || '';
+            document.getElementById('customerNextOfKinPhone').value = localGhanaPhone(c.nextOfKinPhone);
+            document.getElementById('customerPhone').value = localGhanaPhone(c.phone);
             document.getElementById('customerModalTitle').innerHTML = '<i class="fas fa-user-edit"></i> Edit Customer';
         }
     }
@@ -32,12 +32,14 @@ async function saveCustomer(e) {
     const name = document.getElementById('customerName').value.trim();
     const pbNumber = Number(document.getElementById('customerPbNumber').value);
     const nextOfKin = document.getElementById('customerNextOfKin').value.trim();
-    const nextOfKinPhone = document.getElementById('customerNextOfKinPhone').value.trim();
-    const phone = document.getElementById('customerPhone').value.trim();
-    const ghanaPhone = value => !value || /^0[235][0-9]{8}$/.test(value);
+    const nextOfKinPhoneLocal = document.getElementById('customerNextOfKinPhone').value.trim();
+    const phoneLocal = document.getElementById('customerPhone').value.trim();
+    const phone = phoneLocal ? `+233${phoneLocal}` : '';
+    const nextOfKinPhone = nextOfKinPhoneLocal ? `+233${nextOfKinPhoneLocal}` : '';
+    const ghanaPhone = value => !value || /^\+233[235][0-9]{8}$/.test(value);
 
     if (!name || !Number.isInteger(pbNumber) || pbNumber <= 0 || !ghanaPhone(phone) || !ghanaPhone(nextOfKinPhone)) {
-        showToast('Enter a valid PB number and Ghana telephone numbers starting with 0 (10 digits).', 'error');
+        showToast('Enter a valid PB number and Ghana telephone numbers.', 'error');
         return;
     }
 
@@ -216,4 +218,20 @@ function matchCustomerByPb(kind) {
     const customer = data.customers.find(item => Number(item.pbNumber || item.id) === pb);
     if (select) select.value = customer ? customer.id : '';
     if (select) select.title = customer ? customer.name : 'No customer matches this PB number';
+}
+
+function localGhanaPhone(value) {
+    const phone = String(value || '');
+    if (phone.startsWith('+233')) return phone.slice(4);
+    if (/^0[235][0-9]{8}$/.test(phone)) return phone.slice(1);
+    return '';
+}
+
+function validateGhanaPhone(input) {
+    const original = input.value;
+    input.value = original.replace(/\D/g, '').slice(0, 9);
+    const valid = !input.value || /^[235][0-9]{8}$/.test(input.value);
+    const error = document.getElementById(`${input.id}Error`);
+    input.setCustomValidity(valid ? '' : 'Enter 9 digits beginning with 2, 3, or 5.');
+    if (error) error.textContent = valid || !input.value ? '' : 'Enter 9 digits beginning with 2, 3, or 5.';
 }

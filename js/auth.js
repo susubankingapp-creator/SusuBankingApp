@@ -110,18 +110,11 @@ function hideAuthScreen() {
 }
 
 function setAuthMode(mode) {
-    const hasManager = authStore.users.some(user => ['manager', 'administrator'].includes(user.role))
-        || localStorage.getItem(SETUP_COMPLETE_KEY) === 'true';
-    const setup = mode === 'setup' && !hasManager;
-    document.getElementById('authTitle').textContent = setup ? 'Create manager account' : 'Welcome back';
-    document.getElementById('authSubtitle').textContent = setup
-        ? 'Set up the first account for this F EMMANUEL 85 VENTURES workspace.'
-        : 'Sign in to continue to your workspace.';
-    document.getElementById('authSubmit').textContent = setup ? 'Create manager account' : 'Sign in';
-    document.getElementById('authNameGroup').hidden = !setup;
-    document.getElementById('authSwitch').hidden = setup || hasManager;
-    document.getElementById('authReset').hidden = setup;
-    document.getElementById('authMode').value = mode;
+    document.getElementById('authTitle').textContent = 'Welcome back';
+    document.getElementById('authSubtitle').textContent = 'Sign in to continue to your workspace.';
+    document.getElementById('authSubmit').textContent = 'Sign in';
+    document.getElementById('authReset').hidden = false;
+    document.getElementById('authMode').value = 'login';
 }
 
 async function requestPasswordReset() {
@@ -247,6 +240,42 @@ function togglePassword(inputId, button) {
     button.setAttribute('title', isHidden ? 'Hide password' : 'Show password');
     const icon = button.querySelector('i');
     if (icon) icon.className = `fas fa-eye${isHidden ? '-slash' : ''}`;
+}
+
+function openPasswordModal() {
+    if (!requireAuth()) return;
+    document.querySelector('#passwordModal form')?.reset();
+    openModal('passwordModal');
+}
+
+async function changePassword(event) {
+    event.preventDefault();
+    if (!requireAuth()) return;
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    if (newPassword.length < 10 || newPassword !== confirmPassword) {
+        showToast('Use a new password of at least 10 characters and confirm it correctly.', 'error');
+        return;
+    }
+    try {
+        if (cloudReady()) {
+            const email = currentUser.username || '';
+            const { error: verifyError } = await supabaseClient.auth.signInWithPassword({ email, password: currentPassword });
+            if (verifyError) throw new Error('The current password is incorrect.');
+            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+        } else {
+            const user = authStore.users.find(candidate => candidate.id === currentUser.id);
+            if (!user || user.passwordHash !== await hashPassword(currentPassword)) throw new Error('The current password is incorrect.');
+            user.passwordHash = await hashPassword(newPassword);
+            saveAuthStore();
+        }
+        closeModal('passwordModal');
+        showToast('Password updated successfully.', 'success');
+    } catch (error) {
+        showToast(cloudError(error, 'Unable to update password.'), 'error');
+    }
 }
 
 async function enterApp() {
@@ -411,5 +440,5 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else showAuthScreen('login');
         });
     } else if (isAuthenticated()) enterApp();
-    else showAuthScreen(authStore.users.some(user => ['manager', 'administrator'].includes(user.role)) ? 'login' : 'setup');
+    else showAuthScreen('login');
 });

@@ -47,6 +47,27 @@ Replace `AUTH_USER_UUID` with the administrator's Auth user ID. Do not add admin
 
 The transaction email button downloads a CSV and opens a draft email on the current device. Automatic delivery to a fixed manager address requires a backend email provider and a configured manager email; no email password or API key belongs in the frontend.
 
+## Client setup tour
+
+1. In Supabase, run the complete `supabase/schema.sql` in SQL Editor. If the project already contains customers, resolve duplicate PB numbers before the unique index is created.
+2. In Supabase Authentication, create the administrator user with the administrator's email and a new password. Supabase never displays an existing password; use **Reset password** if it is forgotten.
+3. Find the user's ID in Authentication > Users or with `select id, email from auth.users;`, then create the matching administrator profile:
+
+```sql
+insert into public.profiles (id, full_name, role, active)
+values ('AUTH_USER_UUID', 'Administrator Name', 'administrator', true)
+on conflict (id) do update set full_name = excluded.full_name, role = 'administrator', active = true;
+```
+
+4. In Vercel, add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `CORS_ORIGIN` under the Production environment. Set `CORS_ORIGIN` to the deployed site origin, then redeploy.
+5. Open the deployed site and sign in with the administrator email and password. Create the manager and staff accounts from **Staff Access** as required.
+6. Install the site from the browser's install prompt or browser menu. The PWA caches only the static app shell; API requests, authentication, and records are never cached by the service worker.
+7. When a new version is deployed, users see an update notice and choose when to refresh. The app does not silently reload during a session.
+
+### Shorter link
+
+The Vercel link can only be shortened by attaching a domain you own. In Vercel, open **Settings > Domains**, add a short domain such as `femmanuelventures.com` or a subdomain such as `app.femmanuelventures.com`, then follow the DNS instructions. The Vercel URL remains available as a fallback.
+
 ## Recommended next features
 
 1. **User accounts and permissions:** separate admins, tellers, and auditors with sign-in and an activity trail.

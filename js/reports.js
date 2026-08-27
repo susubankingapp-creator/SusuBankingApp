@@ -212,7 +212,14 @@ function populateCustomerReportDropdown() {
     const currentValue = select.value;
     select.innerHTML = '<option value="">— Select customer —</option>';
     const sort = document.getElementById('customerReportSort')?.value || 'name';
-    const customers = [...data.customers].sort((a, b) => sort === 'pb'
+    const filterInput = document.getElementById('customerReportFilter');
+    if (filterInput) filterInput.placeholder = sort === 'pb' ? 'Type PB number' : 'Type customer name';
+    const filter = document.getElementById('customerReportFilter')?.value.trim().toLowerCase() || '';
+    const customers = data.customers.filter(customer => {
+        if (!filter) return true;
+        const searchValue = sort === 'pb' ? String(customer.pbNumber || customer.id) : customer.name;
+        return searchValue.toLowerCase().includes(filter);
+    }).sort((a, b) => sort === 'pb'
         ? Number(a.pbNumber || a.id) - Number(b.pbNumber || b.id)
         : a.name.localeCompare(b.name));
     customers.forEach(customer => {
@@ -325,6 +332,21 @@ function printSummaryReport() {
         return;
     }
     printReportHtml('F EMMANUEL 85 VENTURES Report', output.innerHTML);
+}
+
+function emailSummaryReport() {
+    if (!requireAuth()) return;
+    const date = document.getElementById('reportDate')?.value;
+    const type = document.getElementById('reportType')?.value;
+    const output = document.getElementById('reportOutput');
+    if (!date || !output || output.querySelector('.empty-state')) {
+        showToast('Generate a report before preparing an email.', 'error');
+        return;
+    }
+    exportSummaryReport();
+    const subject = `F EMMANUEL 85 VENTURES ${type} report - ${date}`;
+    const body = `The ${type} report for ${date} has been downloaded. Please attach the CSV file before sending this email.`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 function printCustomerReport() {

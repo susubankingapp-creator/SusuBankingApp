@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>F EMMANUEL 85 VENTURES · Management System</title>
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="application-name" content="F EMMANUEL 85 VENTURES" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml" />
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -33,14 +37,12 @@
             <p id="authSubtitle">Sign in to continue to your workspace.</p>
             <form id="authForm" onsubmit="submitAuth(event)">
                 <input type="hidden" id="authMode" value="login" />
-                <div class="form-group" id="authNameGroup"><label for="authName">Full name</label><input type="text" id="authName" class="form-control" autocomplete="name" /></div>
                 <div class="form-group"><label for="authUsername">Username or email</label><input type="text" id="authUsername" class="form-control" autocomplete="username" required /></div>
                 <div class="form-group"><label for="authPassword">Password</label><div class="password-field"><input type="password" id="authPassword" class="form-control" autocomplete="current-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('authPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
                 <p class="auth-message" id="authMessage" aria-live="polite"></p>
                 <button class="btn btn-accent w-full" id="authSubmit" type="submit">Sign in</button>
             </form>
             <button class="auth-reset" id="authReset" type="button" onclick="requestPasswordReset()">Forgot password?</button>
-            <button class="auth-switch" id="authSwitch" type="button" onclick="setAuthMode('setup')" hidden>Set up the first manager account</button>
             <small class="auth-note">Private workspace access.</small>
         </div>
     </section>
@@ -90,6 +92,7 @@
                     <div class="name">F EMMANUEL 85 VENTURES</div>
                     <div class="role">Access</div>
                 </div>
+                <button class="btn-icon" onclick="openPasswordModal()" title="Change password"><i class="fas fa-key"></i></button>
                 <button class="btn-icon sidebar-logout" onclick="logout()" title="Sign out"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
@@ -374,6 +377,7 @@
                         <div class="report-actions">
                             <button class="btn btn-outline btn-sm" type="button" onclick="exportSummaryReport()"><i class="fas fa-save"></i> Save Report</button>
                             <button class="btn btn-outline btn-sm" type="button" onclick="printSummaryReport()"><i class="fas fa-print"></i> Print</button>
+                            <button class="btn btn-accent btn-sm" type="button" onclick="emailSummaryReport()"><i class="fas fa-envelope"></i> Prepare Email</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -408,10 +412,13 @@
                         <div class="form-row customer-report-controls">
                             <div class="form-group">
                                 <label for="customerReportSelect">Customer</label>
-                                <select id="customerReportSort" class="form-control" onchange="populateCustomerReportDropdown()">
-                                    <option value="name">Sort by Name</option>
-                                    <option value="pb">Sort by PB#</option>
-                                </select>
+                                <div class="customer-report-filter">
+                                    <input type="text" id="customerReportFilter" class="form-control" placeholder="Type customer name" oninput="populateCustomerReportDropdown()" />
+                                    <select id="customerReportSort" class="form-control" onchange="populateCustomerReportDropdown()" aria-label="Sort by">
+                                        <option value="name">Sort by Name</option>
+                                        <option value="pb">Sort by PB#</option>
+                                    </select>
+                                </div>
                                 <select id="customerReportSelect" class="form-control" onchange="generateCustomerReport()">
                                     <option value="">— Select customer —</option>
                                 </select>
@@ -471,7 +478,11 @@
                         </div>
                         <div class="form-group">
                             <label>Telephone (optional)</label>
-                            <input type="tel" id="customerPhone" class="form-control" inputmode="numeric" maxlength="10" pattern="0[235][0-9]{8}" placeholder="e.g. 0244XXXXXX" />
+                            <div class="phone-field">
+                                <span class="phone-country" aria-hidden="true">🇬🇭 +233</span>
+                                <input type="tel" id="customerPhone" class="form-control" inputmode="numeric" maxlength="9" pattern="[235][0-9]{8}" placeholder="24XXXXXXX" oninput="validateGhanaPhone(this)" aria-describedby="customerPhoneError" />
+                            </div>
+                            <small class="field-error" id="customerPhoneError" aria-live="polite"></small>
                         </div>
                     </div>
                     <div class="form-group">
@@ -480,7 +491,11 @@
                     </div>
                     <div class="form-group">
                         <label>Next of Kin Telephone (optional)</label>
-                        <input type="tel" id="customerNextOfKinPhone" class="form-control" inputmode="numeric" maxlength="10" pattern="0[235][0-9]{8}" placeholder="e.g. 0244XXXXXX" />
+                        <div class="phone-field">
+                            <span class="phone-country" aria-hidden="true">🇬🇭 +233</span>
+                            <input type="tel" id="customerNextOfKinPhone" class="form-control" inputmode="numeric" maxlength="9" pattern="[235][0-9]{8}" placeholder="24XXXXXXX" oninput="validateGhanaPhone(this)" aria-describedby="customerNextOfKinPhoneError" />
+                        </div>
+                        <small class="field-error" id="customerNextOfKinPhoneError" aria-live="polite"></small>
                     </div>
                     <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;">
                         <button type="button" class="btn btn-outline" onclick="closeModal('customerModal')">Cancel</button>
@@ -584,6 +599,18 @@
     <div class="modal-overlay" id="staffModal">
         <div class="modal"><div class="modal-header"><h3><i class="fas fa-user-plus"></i> Add Staff Member</h3><button class="modal-close" onclick="closeModal('staffModal')">&times;</button></div>
             <div class="modal-body"><form onsubmit="addStaff(event)"><div class="form-group"><label for="staffName">Full name <span class="required">*</span></label><input id="staffName" class="form-control" required /></div><div class="form-group"><label for="staffUsername">Username <span class="required">*</span></label><input id="staffUsername" class="form-control" autocomplete="username" required /></div><div class="form-group"><label for="staffPassword">Temporary password <span class="required">*</span></label><div class="password-field"><input id="staffPassword" type="password" class="form-control" minlength="10" required /><button type="button" class="password-toggle" onclick="togglePassword('staffPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div><div class="modal-footer" style="padding:16px 0 0;border-top:none;"><button type="button" class="btn btn-outline" onclick="closeModal('staffModal')">Cancel</button><button type="submit" class="btn btn-accent"><i class="fas fa-save"></i> Create staff</button></div></form></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal">
+            <div class="modal-header"><h3><i class="fas fa-key"></i> Change Password</h3><button class="modal-close" onclick="closeModal('passwordModal')">&times;</button></div>
+            <div class="modal-body"><form onsubmit="changePassword(event)">
+                <div class="form-group"><label for="currentPassword">Current password</label><input id="currentPassword" type="password" class="form-control" autocomplete="current-password" required /></div>
+                <div class="form-group"><label for="newPassword">New password</label><input id="newPassword" type="password" class="form-control" minlength="10" autocomplete="new-password" required /></div>
+                <div class="form-group"><label for="confirmPassword">Confirm new password</label><input id="confirmPassword" type="password" class="form-control" minlength="10" autocomplete="new-password" required /></div>
+                <div class="modal-footer" style="padding:16px 0 0;border-top:none;"><button type="button" class="btn btn-outline" onclick="closeModal('passwordModal')">Cancel</button><button type="submit" class="btn btn-accent"><i class="fas fa-save"></i> Update password</button></div>
+            </form></div>
         </div>
     </div>
 

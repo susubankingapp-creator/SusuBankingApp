@@ -119,6 +119,7 @@ function renderAll() {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
+    registerAppUpdates();
     renderAll();
 
     // Set default report date to today
@@ -180,3 +181,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function registerAppUpdates() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+        registration.update();
+        registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', () => {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) showUpdateNotice(registration);
+            });
+        });
+    }).catch(() => { /* PWA support is optional when opened as a local file. */ });
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+}
+
+function showUpdateNotice(registration) {
+    if (document.getElementById('appUpdateNotice')) return;
+    const notice = document.createElement('div');
+    notice.id = 'appUpdateNotice';
+    notice.className = 'app-update-notice';
+    notice.innerHTML = '<span>A new version is ready.</span><button type="button" class="btn btn-accent btn-xs">Update</button>';
+    notice.querySelector('button').addEventListener('click', () => {
+        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+    });
+    document.body.appendChild(notice);
+}

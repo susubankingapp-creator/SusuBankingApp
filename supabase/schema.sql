@@ -38,13 +38,15 @@ create table if not exists public.customers (
 alter table public.customers add column if not exists pb_number integer;
 alter table public.customers add column if not exists next_of_kin_phone text;
 update public.customers set pb_number = id::integer where pb_number is null;
+update public.customers set phone = '+233' || substring(phone from 2) where phone ~ '^0[235][0-9]{8}$';
+update public.customers set next_of_kin_phone = '+233' || substring(next_of_kin_phone from 2) where next_of_kin_phone ~ '^0[235][0-9]{8}$';
 alter table public.customers alter column pb_number set not null;
 alter table public.customers drop constraint if exists customers_pb_number_check;
 alter table public.customers add constraint customers_pb_number_check check (pb_number > 0);
 alter table public.customers drop constraint if exists customers_phone_format_check;
-alter table public.customers add constraint customers_phone_format_check check (phone is null or phone ~ '^0[235][0-9]{8}$') not valid;
+alter table public.customers add constraint customers_phone_format_check check (phone is null or phone ~ '^\+233[235][0-9]{8}$') not valid;
 alter table public.customers drop constraint if exists customers_next_of_kin_phone_format_check;
-alter table public.customers add constraint customers_next_of_kin_phone_format_check check (next_of_kin_phone is null or next_of_kin_phone ~ '^0[235][0-9]{8}$') not valid;
+alter table public.customers add constraint customers_next_of_kin_phone_format_check check (next_of_kin_phone is null or next_of_kin_phone ~ '^\+233[235][0-9]{8}$') not valid;
 create unique index if not exists customers_pb_number_unique_idx on public.customers(pb_number);
 
 create table if not exists public.transactions (
