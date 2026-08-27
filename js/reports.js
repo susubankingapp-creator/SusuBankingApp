@@ -26,8 +26,8 @@ function renderBalances() {
         html += `
             <tr>
                 <td>${idx + 1}</td>
-                <td><strong>${c.name}</strong></td>
-                <td>${c.phone || '—'}</td>
+                <td><strong>${escapeHtml(c.name)}</strong></td>
+                <td>${escapeHtml(c.phone || '—')}</td>
                 <td class="text-success">GH₵ ${totals.totalIn.toFixed(2)}</td>
                 <td class="text-danger">GH₵ ${totals.totalOut.toFixed(2)}</td>
                 <td class="${balance >= 0 ? 'text-success' : 'text-danger'} fw-600">

@@ -10,14 +10,18 @@ const port = Number(process.env.PORT || 3000);
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anonKey = process.env.SUPABASE_ANON_KEY;
-if (!supabaseUrl || !serviceRoleKey || !anonKey) throw new Error('SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY are required.');
-const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+const cloudConfigured = Boolean(supabaseUrl && serviceRoleKey && anonKey);
+const admin = cloudConfigured
+    ? createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
+    : null;
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
+const corsOrigin = process.env.CORS_ORIGIN?.trim();
+if (corsOrigin) app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
 
 async function requireUser(req, res, next) {
+    if (!admin) return res.status(503).json({ error: 'Cloud database is not configured on this deployment.' });
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
     if (!token) return res.status(401).json({ error: 'Authentication required.' });
     const { data: { user }, error } = await admin.auth.getUser(token);

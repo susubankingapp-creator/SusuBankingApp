@@ -296,7 +296,7 @@ async function addStaff(event) {
 
 async function removeStaff(id) {
     if (!requireManager()) return;
-    const staff = authStore.users.find(user => user.id === id && user.role === 'staff');
+    const staff = getAllStaffUsers().find(user => user.id === id && user.role === 'staff');
     if (!staff || !confirm(`Remove staff access for ${staff.name}?`)) return;
     if (cloudReady()) {
         try {
@@ -309,7 +309,7 @@ async function removeStaff(id) {
     } else {
         staff.active = false;
     }
-    saveAuthStore();
+    if (!cloudReady()) saveAuthStore();
     renderStaff();
     populateStaffDropdowns();
     showToast(`${staff.name} no longer has access.`, 'warning');

@@ -181,9 +181,11 @@ async function saveCashOut(e) {
         return;
     }
 
-    // Check if customer has enough balance
-    const balance = getCustomerBalance(customerId);
-    if (balance < amount && !id) {
+    // Check the resulting balance, excluding the transaction being edited.
+    const balance = data.transactions
+        .filter(t => t.customerId === customerId && t.id !== Number(id))
+        .reduce((total, t) => total + (t.type === 'cashIn' ? Number(t.amount) : -Number(t.amount)), 0);
+    if (balance < amount) {
         showToast(`Insufficient balance for ${getCustomerName(customerId)}. Available: GH₵ ${balance.toFixed(2)}`, 'error');
         return;
     }

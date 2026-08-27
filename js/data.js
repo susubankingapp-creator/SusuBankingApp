@@ -85,10 +85,11 @@ function mapCloudTransaction(transaction) {
 }
 
 async function cloudUpdateTransaction(id, transaction) {
-    const { data: updated, error } = await supabaseClient.from('transactions').update({
-        date: transaction.date, pb_number: transaction.pbNumber, customer_id: transaction.customerId,
-        amount: transaction.amount, received_by: transaction.receivedBy || null, issued_by: transaction.issuedBy || null
-    }).eq('id', id).select('id, date, type, pb_number, customer_id, amount, staff_id, received_by, issued_by, created_at').single();
+    const { data: updated, error } = await supabaseClient.rpc('update_transaction', {
+        p_id: id, p_date: transaction.date, p_pb_number: transaction.pbNumber,
+        p_customer_id: transaction.customerId, p_amount: transaction.amount,
+        p_received_by: transaction.receivedBy || null, p_issued_by: transaction.issuedBy || null
+    });
     if (error) throw error;
     return mapCloudTransaction(updated);
 }
@@ -184,7 +185,10 @@ function showToast(message, type = 'success') {
     const icon = type === 'success' ? 'fa-check-circle' :
         type === 'error' ? 'fa-exclamation-circle' :
         type === 'warning' ? 'fa-triangle-exclamation' : 'fa-info-circle';
-    toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+    const iconElement = document.createElement('i');
+    iconElement.className = `fas ${icon}`;
+    toast.appendChild(iconElement);
+    toast.appendChild(document.createTextNode(` ${String(message ?? '')}`));
     container.appendChild(toast);
     
     setTimeout(() => {
