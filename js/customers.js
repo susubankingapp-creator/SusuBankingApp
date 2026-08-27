@@ -17,6 +17,7 @@ function openCustomerModal(customerId) {
             document.getElementById('customerName').value = c.name || '';
             document.getElementById('customerPbNumber').value = c.pbNumber || c.id || '';
             document.getElementById('customerNextOfKin').value = c.nextOfKin || '';
+            document.getElementById('customerNextOfKinPhone').value = c.nextOfKinPhone || '';
             document.getElementById('customerPhone').value = c.phone || '';
             document.getElementById('customerModalTitle').innerHTML = '<i class="fas fa-user-edit"></i> Edit Customer';
         }
@@ -31,10 +32,12 @@ async function saveCustomer(e) {
     const name = document.getElementById('customerName').value.trim();
     const pbNumber = Number(document.getElementById('customerPbNumber').value);
     const nextOfKin = document.getElementById('customerNextOfKin').value.trim();
+    const nextOfKinPhone = document.getElementById('customerNextOfKinPhone').value.trim();
     const phone = document.getElementById('customerPhone').value.trim();
+    const ghanaPhone = value => !value || /^0[235][0-9]{8}$/.test(value);
 
-    if (!name || !Number.isInteger(pbNumber) || pbNumber <= 0) {
-        showToast('Customer name and a valid PB number are required.', 'error');
+    if (!name || !Number.isInteger(pbNumber) || pbNumber <= 0 || !ghanaPhone(phone) || !ghanaPhone(nextOfKinPhone)) {
+        showToast('Enter a valid PB number and Ghana telephone numbers starting with 0 (10 digits).', 'error');
         return;
     }
 
@@ -44,13 +47,13 @@ async function saveCustomer(e) {
             let updated;
             if (cloudReady()) {
                 try {
-                    updated = await cloudUpdateCustomer(existing.id, { name, pbNumber, nextOfKin, phone });
+                    updated = await cloudUpdateCustomer(existing.id, { name, pbNumber, nextOfKin, nextOfKinPhone, phone });
                 } catch (error) {
                     showToast(cloudError(error, 'Unable to update customer.'), 'error');
                     return;
                 }
             } else {
-                updated = { ...existing, name, pbNumber, nextOfKin, phone };
+                updated = { ...existing, name, pbNumber, nextOfKin, nextOfKinPhone, phone };
             }
             data.customers[data.customers.indexOf(existing)] = updated;
             showToast('Customer updated successfully.', 'success');
@@ -61,6 +64,7 @@ async function saveCustomer(e) {
             name,
             pbNumber,
             nextOfKin,
+            nextOfKinPhone,
             phone,
             createdAt: todayStr()
         };
@@ -121,6 +125,7 @@ function renderCustomers() {
     if (search) {
         filtered = filtered.filter(c =>
             c.name.toLowerCase().includes(search) ||
+            String(c.pbNumber || c.id).includes(search) ||
             (c.phone && c.phone.includes(search))
         );
     }
@@ -203,4 +208,12 @@ function showCustomerHistory(customerId) {
     document.getElementById('customerHistoryTitle').innerHTML = `<i class="fas fa-user-clock"></i> ${escapeHtml(customer.name)} <span class="text-muted fs-small">${escapeHtml(customer.phone || 'No phone')}</span>`;
     body.innerHTML = history.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>PB#</th><th>Amount</th></tr></thead><tbody>${history.map(item => `<tr><td>${formatDate(item.date)}</td><td><span class="badge-status ${item.type === 'cashIn' ? 'in' : 'out'}">${item.type === 'cashIn' ? 'Cash In' : 'Cash Out'}</span></td><td>#${item.pbNumber}</td><td class="${item.type === 'cashIn' ? 'text-success' : 'text-danger'} fw-600">GH₵ ${Number(item.amount).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state"><i class="fas fa-inbox"></i><h3>No transactions yet</h3><p>This customer has no transaction history.</p></div>';
     openModal('customerHistoryModal');
+}
+
+function matchCustomerByPb(kind) {
+    const pb = Number(document.getElementById(`${kind}Pb`)?.value);
+    const select = document.getElementById(`${kind}Customer`);
+    const customer = data.customers.find(item => Number(item.pbNumber || item.id) === pb);
+    if (select) select.value = customer ? customer.id : '';
+    if (select) select.title = customer ? customer.name : 'No customer matches this PB number';
 }

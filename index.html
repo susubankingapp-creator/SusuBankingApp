@@ -371,7 +371,10 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-calendar-alt"></i> Daily / Monthly Summary</h2>
-                        <button class="btn btn-outline btn-sm" type="button" onclick="exportSummaryReport()"><i class="fas fa-save"></i> Save Report</button>
+                        <div class="report-actions">
+                            <button class="btn btn-outline btn-sm" type="button" onclick="exportSummaryReport()"><i class="fas fa-save"></i> Save Report</button>
+                            <button class="btn btn-outline btn-sm" type="button" onclick="printSummaryReport()"><i class="fas fa-print"></i> Print</button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="form-row" style="margin-bottom:20px;">
@@ -383,6 +386,7 @@
                                 <label>Report Type</label>
                                 <select id="reportType" class="form-control" onchange="generateReport()">
                                     <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
                                     <option value="monthly">Monthly</option>
                                 </select>
                             </div>
@@ -404,12 +408,17 @@
                         <div class="form-row customer-report-controls">
                             <div class="form-group">
                                 <label for="customerReportSelect">Customer</label>
+                                <select id="customerReportSort" class="form-control" onchange="populateCustomerReportDropdown()">
+                                    <option value="name">Sort by Name</option>
+                                    <option value="pb">Sort by PB#</option>
+                                </select>
                                 <select id="customerReportSelect" class="form-control" onchange="generateCustomerReport()">
                                     <option value="">— Select customer —</option>
                                 </select>
                             </div>
                             <div class="customer-report-actions">
                                 <button class="btn btn-outline" type="button" onclick="exportCustomerReport()"><i class="fas fa-download"></i> Download CSV</button>
+                                <button class="btn btn-outline" type="button" onclick="printCustomerReport()"><i class="fas fa-print"></i> Print</button>
                                 <button class="btn btn-accent" type="button" onclick="emailCustomerReport()"><i class="fas fa-envelope"></i> Prepare Email</button>
                             </div>
                         </div>
@@ -462,12 +471,16 @@
                         </div>
                         <div class="form-group">
                             <label>Telephone (optional)</label>
-                            <input type="tel" id="customerPhone" class="form-control" placeholder="e.g. 0244XXXXXX" />
+                            <input type="tel" id="customerPhone" class="form-control" inputmode="numeric" maxlength="10" pattern="0[235][0-9]{8}" placeholder="e.g. 0244XXXXXX" />
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Next of Kin</label>
                         <input type="text" id="customerNextOfKin" class="form-control" placeholder="Next of kin name" />
+                    </div>
+                    <div class="form-group">
+                        <label>Next of Kin Telephone (optional)</label>
+                        <input type="tel" id="customerNextOfKinPhone" class="form-control" inputmode="numeric" maxlength="10" pattern="0[235][0-9]{8}" placeholder="e.g. 0244XXXXXX" />
                     </div>
                     <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;">
                         <button type="button" class="btn btn-outline" onclick="closeModal('customerModal')">Cancel</button>
@@ -495,12 +508,12 @@
                         </div>
                         <div class="form-group">
                             <label>PB# (Payment Book) <span class="required">*</span></label>
-                            <input type="number" id="cashinPb" class="form-control" placeholder="e.g. 81" required />
+                            <input type="number" id="cashinPb" class="form-control" placeholder="e.g. 81" min="1" required oninput="matchCustomerByPb('cashin')" />
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Customer <span class="required">*</span></label>
-                        <select id="cashinCustomer" class="form-control customer-select" required>
+                        <select id="cashinCustomer" class="form-control customer-select" required disabled>
                             <option value="">— Select Customer —</option>
                         </select>
                     </div>
@@ -511,7 +524,7 @@
                         </div>
                         <div class="form-group">
                             <label>Received By</label>
-                            <select id="cashinReceivedBy" class="form-control" required><option value="">— Select staff member —</option></select>
+                            <select id="cashinReceivedBy" class="form-control" required disabled><option value="">Current user</option></select>
                         </div>
                     </div>
                     <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;">
@@ -540,12 +553,12 @@
                         </div>
                         <div class="form-group">
                             <label>PB# (Receipt Book) <span class="required">*</span></label>
-                            <input type="number" id="cashoutPb" class="form-control" placeholder="e.g. 41" required />
+                            <input type="number" id="cashoutPb" class="form-control" placeholder="e.g. 41" min="1" required oninput="matchCustomerByPb('cashout')" />
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Customer <span class="required">*</span></label>
-                        <select id="cashoutCustomer" class="form-control customer-select" required>
+                        <select id="cashoutCustomer" class="form-control customer-select" required disabled>
                             <option value="">— Select Customer —</option>
                         </select>
                     </div>
@@ -556,7 +569,7 @@
                         </div>
                         <div class="form-group">
                             <label>Issued By</label>
-                            <select id="cashoutIssuedBy" class="form-control" required><option value="">— Select staff member —</option></select>
+                            <select id="cashoutIssuedBy" class="form-control" required disabled><option value="">Current user</option></select>
                         </div>
                     </div>
                     <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;">

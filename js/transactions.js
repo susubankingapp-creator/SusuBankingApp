@@ -8,19 +8,21 @@ function openCashInModal(transactionId) {
     form.reset();
     document.getElementById('cashinEditId').value = '';
     document.getElementById('cashinDate').value = todayStr();
+    populateStaffDropdowns();
 
     if (transactionId) {
         const t = data.transactions.find(t => t.id === transactionId && t.type === 'cashIn');
         if (t) {
             document.getElementById('cashinEditId').value = t.id;
             document.getElementById('cashinDate').value = t.date || '';
-            document.getElementById('cashinPb').value = t.pbNumber || '';
+            document.getElementById('cashinPb').value = data.customers.find(customer => customer.id === t.customerId)?.pbNumber || t.pbNumber || '';
             document.getElementById('cashinCustomer').value = t.customerId || '';
             document.getElementById('cashinAmount').value = t.amount || '';
             document.getElementById('cashinReceivedBy').value = t.receivedBy || '';
         }
     }
     populateCustomerDropdowns();
+    matchCustomerByPb('cashin');
     openModal('cashinModal');
 }
 
@@ -33,9 +35,10 @@ async function saveCashIn(e) {
     const customerId = Number(document.getElementById('cashinCustomer').value);
     const amount = parseFloat(document.getElementById('cashinAmount').value);
     const receivedBy = getCurrentUser().name;
+    const customer = data.customers.find(item => Number(item.pbNumber || item.id) === Number(pbNumber));
 
-    if (!date || !pbNumber || !customerId || isNaN(amount) || amount <= 0 || !receivedBy) {
-        showToast('Please fill all required fields correctly.', 'error');
+    if (!date || !pbNumber || !customer || customer.id !== customerId || isNaN(amount) || amount <= 0 || !receivedBy) {
+        showToast('Enter a valid PB number that matches an existing customer.', 'error');
         return;
     }
 
@@ -150,19 +153,21 @@ function openCashOutModal(transactionId) {
     form.reset();
     document.getElementById('cashoutEditId').value = '';
     document.getElementById('cashoutDate').value = todayStr();
+    populateStaffDropdowns();
 
     if (transactionId) {
         const t = data.transactions.find(t => t.id === transactionId && t.type === 'cashOut');
         if (t) {
             document.getElementById('cashoutEditId').value = t.id;
             document.getElementById('cashoutDate').value = t.date || '';
-            document.getElementById('cashoutPb').value = t.pbNumber || '';
+            document.getElementById('cashoutPb').value = data.customers.find(customer => customer.id === t.customerId)?.pbNumber || t.pbNumber || '';
             document.getElementById('cashoutCustomer').value = t.customerId || '';
             document.getElementById('cashoutAmount').value = t.amount || '';
             document.getElementById('cashoutIssuedBy').value = t.issuedBy || '';
         }
     }
     populateCustomerDropdowns();
+    matchCustomerByPb('cashout');
     openModal('cashoutModal');
 }
 
@@ -175,9 +180,10 @@ async function saveCashOut(e) {
     const customerId = Number(document.getElementById('cashoutCustomer').value);
     const amount = parseFloat(document.getElementById('cashoutAmount').value);
     const issuedBy = getCurrentUser().name;
+    const customer = data.customers.find(item => Number(item.pbNumber || item.id) === Number(pbNumber));
 
-    if (!date || !pbNumber || !customerId || isNaN(amount) || amount <= 0 || !issuedBy) {
-        showToast('Please fill all required fields correctly.', 'error');
+    if (!date || !pbNumber || !customer || customer.id !== customerId || isNaN(amount) || amount <= 0 || !issuedBy) {
+        showToast('Enter a valid PB number that matches an existing customer.', 'error');
         return;
     }
 

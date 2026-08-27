@@ -75,8 +75,18 @@ function generateReport() {
     }
 
     let transactions = [];
+    const selectedDate = new Date(`${date}T00:00:00`);
     if (type === 'daily') {
         transactions = data.transactions.filter(t => t.date === date);
+    } else if (type === 'weekly') {
+        const weekStart = new Date(selectedDate);
+        weekStart.setDate(selectedDate.getDate() - selectedDate.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        transactions = data.transactions.filter(t => {
+            const transactionDate = new Date(`${t.date}T00:00:00`);
+            return transactionDate >= weekStart && transactionDate <= weekEnd;
+        });
     } else {
         // monthly
         const month = date.substring(0, 7);
@@ -94,7 +104,7 @@ function generateReport() {
             <div class="empty-state">
                 <i class="fas fa-file-alt"></i>
                 <h3>No transactions found</h3>
-                <p>No records for the selected ${type === 'daily' ? 'date' : 'month'}.</p>
+                <p>No records for the selected ${type === 'daily' ? 'date' : type === 'weekly' ? 'week' : 'month'}.</p>
             </div>
         `;
         return;
@@ -157,9 +167,21 @@ function exportSummaryReport() {
         showToast('Select a report date first.', 'error');
         return;
     }
+    const selectedDate = new Date(`${date}T00:00:00`);
+    const weekStart = new Date(selectedDate);
+    weekStart.setDate(selectedDate.getDate() - selectedDate.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
     const month = date.substring(0, 7);
     const transactions = data.transactions
-        .filter(transaction => type === 'daily' ? transaction.date === date : transaction.date?.startsWith(month))
+        .filter(transaction => {
+            if (type === 'daily') return transaction.date === date;
+            if (type === 'weekly') {
+                const transactionDate = new Date(`${transaction.date}T00:00:00`);
+                return transactionDate >= weekStart && transactionDate <= weekEnd;
+            }
+            return transaction.date?.startsWith(month);
+        })
         .sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id);
     const rows = [['Date', 'Type', 'PB Number', 'Customer', 'Amount (GHS)', 'Staff'], ...transactions.map(transaction => [
         transaction.date,
@@ -189,7 +211,11 @@ function populateCustomerReportDropdown() {
     if (!select) return;
     const currentValue = select.value;
     select.innerHTML = '<option value="">— Select customer —</option>';
-    data.customers.forEach(customer => {
+    const sort = document.getElementById('customerReportSort')?.value || 'name';
+    const customers = [...data.customers].sort((a, b) => sort === 'pb'
+        ? Number(a.pbNumber || a.id) - Number(b.pbNumber || b.id)
+        : a.name.localeCompare(b.name));
+    customers.forEach(customer => {
         const option = document.createElement('option');
         option.value = customer.id;
         option.textContent = customer.name;
@@ -209,6 +235,8 @@ function generateCustomerReport() {
     const history = data.transactions.filter(transaction => transaction.customerId === customer.id);
     const totals = getCustomerTotals(customer.id);
     const balance = totals.totalIn - totals.totalOut;
+    const rows = history.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id)
+        .map(transaction => `<tr><td>${formatDate(transaction.date)}</td><td>${transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out'}</td><td>#${transaction.pbNumber}</td><td>GH₵ ${Number(transaction.amount).toFixed(2)}</td><td>${escapeHtml(transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy)}</td></tr>`).join('');
     output.innerHTML = `
         <div class="customer-report-summary">
             <div><span class="text-muted fs-small">Customer</span><strong>${escapeHtml(customer.name)}</strong></div>
@@ -218,6 +246,7 @@ function generateCustomerReport() {
             <div><span class="text-muted fs-small">Balance</span><strong class="${balance >= 0 ? 'text-success' : 'text-danger'}">GH₵ ${balance.toFixed(2)}</strong></div>
         </div>
         <p class="text-muted fs-small">${history.length} transaction${history.length === 1 ? '' : 's'} recorded.</p>
+        ${history.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>PB#</th><th>Amount</th><th>Staff</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}
     `;
 }
 
@@ -274,4 +303,37 @@ function emailCustomerReport() {
     const subject = `Customer report - ${customer.name}`;
     const body = `The customer report for ${customer.name} has been downloaded. Please attach the CSV file before sending this email.`;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function printReportHtml(title, html) {
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+        showToast('Allow pop-ups to print this report.', 'error');
+        return;
+    }
+    printWindow.document.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:28px}h1{font-size:22px;border-bottom:2px solid #f59e0b;padding-bottom:10px}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#f1f5f9}.customer-report-summary{display:flex;gap:24px;flex-wrap:wrap;margin:18px 0}.customer-report-summary div{display:flex;flex-direction:column;gap:4px}</style></head><body><h1>${escapeHtml(title)}</h1>${html}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
+function printSummaryReport() {
+    if (!requireAuth()) return;
+    const output = document.getElementById('reportOutput');
+    if (!output || output.querySelector('.empty-state')) {
+        showToast('Generate a report before printing.', 'error');
+        return;
+    }
+    printReportHtml('F EMMANUEL 85 VENTURES Report', output.innerHTML);
+}
+
+function printCustomerReport() {
+    if (!requireAuth()) return;
+    const customer = getSelectedReportCustomer();
+    const output = document.getElementById('customerReportOutput');
+    if (!customer || !output) {
+        showToast('Select a customer before printing.', 'error');
+        return;
+    }
+    printReportHtml(`Customer Report - ${customer.name}`, output.innerHTML);
 }

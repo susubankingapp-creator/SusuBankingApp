@@ -390,8 +390,12 @@ function populateStaffDropdowns() {
             select.appendChild(option);
         });
         select.disabled = staff.length === 1;
-        if (staff.length === 1) select.value = staff[0].name;
-        if (staff.some(user => user.name === currentValue)) select.value = currentValue;
+        if (staff.length === 1) {
+            select.value = staff[0].name;
+            select.options[1].selected = true;
+        } else if (staff.some(user => user.name === currentValue)) {
+            select.value = currentValue;
+        }
     });
 }
 
