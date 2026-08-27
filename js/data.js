@@ -19,6 +19,7 @@ function loadData() {
         if (raw) {
             const parsed = JSON.parse(raw);
             if (parsed.customers && parsed.transactions) {
+                parsed.customers = parsed.customers.map(customer => ({ ...customer, pbNumber: customer.pbNumber || customer.id }));
                 return parsed;
             }
         }
@@ -39,30 +40,30 @@ let nextId = getNextId();
 
 async function hydrateCloudData() {
     if (!cloudReady() || !isAuthenticated()) return;
-    const customerQuery = supabaseClient.from('customers').select('id, name, next_of_kin, phone, created_at').order('name');
+    const customerQuery = supabaseClient.from('customers').select('id, name, pb_number, next_of_kin, phone, created_at').order('name');
     const transactionQuery = supabaseClient.from('transactions').select('id, date, type, pb_number, customer_id, amount, staff_id, received_by, issued_by, created_at').order('date', { ascending: false });
     const [{ data: customers, error: customerError }, { data: transactions, error: transactionError }] = await Promise.all([customerQuery, transactionQuery]);
     if (customerError) throw customerError;
     if (transactionError) throw transactionError;
     data = {
-        customers: (customers || []).map(customer => ({ id: customer.id, name: customer.name, nextOfKin: customer.next_of_kin, phone: customer.phone, createdAt: customer.created_at })),
+        customers: (customers || []).map(customer => ({ id: customer.id, name: customer.name, pbNumber: customer.pb_number, nextOfKin: customer.next_of_kin, phone: customer.phone, createdAt: customer.created_at })),
         transactions: (transactions || []).map(transaction => mapCloudTransaction(transaction))
     };
     nextId = getNextId();
 }
 
 async function cloudAddCustomer(customer) {
-    const { data: created, error } = await supabaseClient.from('customers').insert({ name: customer.name, next_of_kin: customer.nextOfKin, phone: customer.phone }).select('id, name, next_of_kin, phone, created_at').single();
+    const { data: created, error } = await supabaseClient.from('customers').insert({ name: customer.name, pb_number: customer.pbNumber, next_of_kin: customer.nextOfKin, phone: customer.phone }).select('id, name, pb_number, next_of_kin, phone, created_at').single();
     if (error) throw error;
-    return { id: created.id, name: created.name, nextOfKin: created.next_of_kin, phone: created.phone, createdAt: created.created_at };
+    return { id: created.id, name: created.name, pbNumber: created.pb_number, nextOfKin: created.next_of_kin, phone: created.phone, createdAt: created.created_at };
 }
 
 async function cloudUpdateCustomer(id, customer) {
     const { data: updated, error } = await supabaseClient.from('customers')
-        .update({ name: customer.name, next_of_kin: customer.nextOfKin, phone: customer.phone })
-        .eq('id', id).select('id, name, next_of_kin, phone, created_at').single();
+        .update({ name: customer.name, pb_number: customer.pbNumber, next_of_kin: customer.nextOfKin, phone: customer.phone })
+        .eq('id', id).select('id, name, pb_number, next_of_kin, phone, created_at').single();
     if (error) throw error;
-    return { id: updated.id, name: updated.name, nextOfKin: updated.next_of_kin, phone: updated.phone, createdAt: updated.created_at };
+    return { id: updated.id, name: updated.name, pbNumber: updated.pb_number, nextOfKin: updated.next_of_kin, phone: updated.phone, createdAt: updated.created_at };
 }
 
 async function cloudDeleteCustomer(id) {

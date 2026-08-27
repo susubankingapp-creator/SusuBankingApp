@@ -15,6 +15,7 @@ function openCustomerModal(customerId) {
         if (c) {
             document.getElementById('customerEditId').value = c.id;
             document.getElementById('customerName').value = c.name || '';
+            document.getElementById('customerPbNumber').value = c.pbNumber || c.id || '';
             document.getElementById('customerNextOfKin').value = c.nextOfKin || '';
             document.getElementById('customerPhone').value = c.phone || '';
             document.getElementById('customerModalTitle').innerHTML = '<i class="fas fa-user-edit"></i> Edit Customer';
@@ -28,11 +29,12 @@ async function saveCustomer(e) {
     if (!requireManager()) return;
     const id = document.getElementById('customerEditId').value;
     const name = document.getElementById('customerName').value.trim();
+    const pbNumber = Number(document.getElementById('customerPbNumber').value);
     const nextOfKin = document.getElementById('customerNextOfKin').value.trim();
     const phone = document.getElementById('customerPhone').value.trim();
 
-    if (!name) {
-        showToast('Customer name is required.', 'error');
+    if (!name || !Number.isInteger(pbNumber) || pbNumber <= 0) {
+        showToast('Customer name and a valid PB number are required.', 'error');
         return;
     }
 
@@ -42,13 +44,13 @@ async function saveCustomer(e) {
             let updated;
             if (cloudReady()) {
                 try {
-                    updated = await cloudUpdateCustomer(existing.id, { name, nextOfKin, phone });
+                    updated = await cloudUpdateCustomer(existing.id, { name, pbNumber, nextOfKin, phone });
                 } catch (error) {
                     showToast(cloudError(error, 'Unable to update customer.'), 'error');
                     return;
                 }
             } else {
-                updated = { ...existing, name, nextOfKin, phone };
+                updated = { ...existing, name, pbNumber, nextOfKin, phone };
             }
             data.customers[data.customers.indexOf(existing)] = updated;
             showToast('Customer updated successfully.', 'success');
@@ -57,6 +59,7 @@ async function saveCustomer(e) {
         const customer = {
             id: genId(),
             name,
+            pbNumber,
             nextOfKin,
             phone,
             createdAt: todayStr()
@@ -73,6 +76,7 @@ async function saveCustomer(e) {
     renderCustomers();
     updateDashboard();
     populateCustomerDropdowns();
+    populateCustomerReportDropdown();
 }
 
 async function deleteCustomer(id) {
@@ -123,7 +127,7 @@ function renderCustomers() {
 
     if (filtered.length === 0) {
         tbody.innerHTML = `
-            <tr><td colspan="6">
+            <tr><td colspan="7">
                 <div class="empty-state" style="padding:32px 20px;">
                     <i class="fas fa-user-slash"></i>
                     <h3>No customers found</h3>
@@ -143,6 +147,7 @@ function renderCustomers() {
             <tr>
                 <td>${idx + 1}</td>
                 <td><strong>${escapeHtml(c.name)}</strong></td>
+                <td>${escapeHtml(c.pbNumber || c.id || '—')}</td>
                 <td>${escapeHtml(c.nextOfKin || '—')}</td>
                 <td>${escapeHtml(c.phone || '—')}</td>
                 <td class="${balance >= 0 ? 'text-success' : 'text-danger'} fw-600">

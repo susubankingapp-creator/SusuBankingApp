@@ -32,7 +32,7 @@ async function saveCashIn(e) {
     const pbNumber = document.getElementById('cashinPb').value;
     const customerId = Number(document.getElementById('cashinCustomer').value);
     const amount = parseFloat(document.getElementById('cashinAmount').value);
-    const receivedBy = isManager() ? document.getElementById('cashinReceivedBy').value : getCurrentUser().name;
+    const receivedBy = getCurrentUser().name;
 
     if (!date || !pbNumber || !customerId || isNaN(amount) || amount <= 0 || !receivedBy) {
         showToast('Please fill all required fields correctly.', 'error');
@@ -174,7 +174,7 @@ async function saveCashOut(e) {
     const pbNumber = document.getElementById('cashoutPb').value;
     const customerId = Number(document.getElementById('cashoutCustomer').value);
     const amount = parseFloat(document.getElementById('cashoutAmount').value);
-    const issuedBy = isManager() ? document.getElementById('cashoutIssuedBy').value : getCurrentUser().name;
+    const issuedBy = getCurrentUser().name;
 
     if (!date || !pbNumber || !customerId || isNaN(amount) || amount <= 0 || !issuedBy) {
         showToast('Please fill all required fields correctly.', 'error');

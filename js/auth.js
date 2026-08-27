@@ -120,7 +120,39 @@ function setAuthMode(mode) {
     document.getElementById('authSubmit').textContent = setup ? 'Create manager account' : 'Sign in';
     document.getElementById('authNameGroup').hidden = !setup;
     document.getElementById('authSwitch').hidden = setup || hasManager;
+    document.getElementById('authReset').hidden = setup;
     document.getElementById('authMode').value = mode;
+}
+
+async function requestPasswordReset() {
+    const username = document.getElementById('authUsername').value.trim().toLowerCase();
+    if (!username) {
+        showAuthMessage('Enter your email address first.');
+        return;
+    }
+    if (!cloudReady()) {
+        showAuthMessage('Password recovery is available when cloud access is enabled.');
+        return;
+    }
+    const email = username.includes('@') ? username : `${username}@femmanuel85.local`;
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    if (error) {
+        showAuthMessage(cloudError(error, 'Unable to send password reset email.'));
+        return;
+    }
+    showAuthMessage('If that account exists, a password reset email has been sent.');
+}
+
+async function completePasswordRecovery() {
+    const password = window.prompt('Enter a new password of at least 6 characters:');
+    if (!password) return;
+    if (password.length < 6) {
+        showAuthMessage('The new password must be at least 6 characters.');
+        return;
+    }
+    const { error } = await supabaseClient.auth.updateUser({ password });
+    showAuthMessage(error ? cloudError(error, 'Unable to update password.') : 'Password updated. You can now sign in.');
+    if (!error) await supabaseClient.auth.signOut();
 }
 
 async function submitAuth(event) {
@@ -345,10 +377,7 @@ function renderStaff() {
 }
 
 function populateStaffDropdowns() {
-    let staff = isManager() ? getStaffUsers() : (currentUser ? [currentUser] : []);
-    if (isManager() && currentUser && currentUser.active !== false && !staff.some(user => user.id === currentUser.id || user.name === currentUser.name)) {
-        staff = [currentUser, ...staff];
-    }
+    const staff = currentUser ? [currentUser] : [];
     ['cashinReceivedBy', 'cashoutIssuedBy'].forEach(id => {
         const select = document.getElementById(id);
         if (!select) return;
@@ -360,6 +389,8 @@ function populateStaffDropdowns() {
             option.textContent = user.name;
             select.appendChild(option);
         });
+        select.disabled = staff.length === 1;
+        if (staff.length === 1) select.value = staff[0].name;
         if (staff.some(user => user.name === currentValue)) select.value = currentValue;
     });
 }
@@ -367,6 +398,9 @@ function populateStaffDropdowns() {
 document.addEventListener('DOMContentLoaded', async function() {
     await initializeCloud();
     if (cloudReady()) {
+        supabaseClient.auth.onAuthStateChange(event => {
+            if (event === 'PASSWORD_RECOVERY') completePasswordRecovery();
+        });
         supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
             if (session?.user) {
                 try { await loadCloudProfile(session.user); await enterApp(); } catch (error) { showAuthScreen('login'); showAuthMessage(cloudError(error, 'Unable to load your account.')); }

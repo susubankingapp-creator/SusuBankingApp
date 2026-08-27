@@ -39,6 +39,7 @@
                 <p class="auth-message" id="authMessage" aria-live="polite"></p>
                 <button class="btn btn-accent w-full" id="authSubmit" type="submit">Sign in</button>
             </form>
+            <button class="auth-reset" id="authReset" type="button" onclick="requestPasswordReset()">Forgot password?</button>
             <button class="auth-switch" id="authSwitch" type="button" onclick="setAuthMode('setup')" hidden>Set up the first manager account</button>
             <small class="auth-note">Private workspace access.</small>
         </div>
@@ -50,7 +51,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-icon"><i class="fas fa-landmark"></i></div>
-            <div class="brand">F EMMANUEL <span>VENTURES 98</span></div>
+            <div class="brand">F EMMANUEL 85 <span>VENTURES</span></div>
         </div>
 
         <nav class="sidebar-nav">
@@ -58,7 +59,7 @@
             <a class="active" data-page="dashboard" onclick="navigate('dashboard')">
                 <i class="fas fa-th-large"></i> Dashboard
             </a>
-            <a data-page="customers" data-manager-only onclick="navigate('customers')">
+            <a data-page="customers" onclick="navigate('customers')">
                 <i class="fas fa-users"></i> Customers
                 <span class="badge" id="customerCount">0</span>
             </a>
@@ -71,10 +72,10 @@
                 <span class="badge" id="cashoutCount">0</span>
             </a>
             <div class="nav-label" data-manager-only style="margin-top:12px;">Management</div>
-            <a data-page="balances" data-manager-only onclick="navigate('balances')">
+            <a data-page="balances" onclick="navigate('balances')">
                 <i class="fas fa-wallet"></i> Balances
             </a>
-            <a data-page="reports" data-manager-only onclick="navigate('reports')">
+            <a data-page="reports" onclick="navigate('reports')">
                 <i class="fas fa-chart-bar"></i> Reports
             </a>
             <a data-page="staff" data-manager-only onclick="navigate('staff')">
@@ -230,6 +231,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Name</th>
+                                        <th>PB#</th>
                                         <th>Next of Kin</th>
                                         <th>Phone</th>
                                         <th>Balance (GH₵)</th>
@@ -369,6 +371,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-calendar-alt"></i> Daily / Monthly Summary</h2>
+                        <button class="btn btn-outline btn-sm" type="button" onclick="exportSummaryReport()"><i class="fas fa-save"></i> Save Report</button>
                     </div>
                     <div class="card-body">
                         <div class="form-row" style="margin-bottom:20px;">
@@ -452,13 +455,19 @@
                         <label>Full Name <span class="required">*</span></label>
                         <input type="text" id="customerName" class="form-control" placeholder="e.g. OSEI DANIEL" required />
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Customer PB# <span class="required">*</span></label>
+                            <input type="number" id="customerPbNumber" class="form-control" min="1" placeholder="e.g. 81" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Telephone (optional)</label>
+                            <input type="tel" id="customerPhone" class="form-control" placeholder="e.g. 0244XXXXXX" />
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Next of Kin</label>
                         <input type="text" id="customerNextOfKin" class="form-control" placeholder="Next of kin name" />
-                    </div>
-                    <div class="form-group">
-                        <label>Phone Number</label>
-                        <input type="text" id="customerPhone" class="form-control" placeholder="e.g. 0244XXXXXX" />
                     </div>
                     <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;">
                         <button type="button" class="btn btn-outline" onclick="closeModal('customerModal')">Cancel</button>

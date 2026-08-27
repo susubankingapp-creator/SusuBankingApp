@@ -4,7 +4,7 @@
 
 function navigate(page) {
     if (!requireAuth()) return;
-    const managerPages = ['customers', 'balances', 'reports', 'staff'];
+    const managerPages = ['staff'];
     if (managerPages.includes(page) && !isManager()) {
         showToast('This section is available to the manager only.', 'error');
         return;

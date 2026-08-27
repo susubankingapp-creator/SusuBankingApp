@@ -149,6 +149,36 @@ function generateReport() {
     output.innerHTML = html;
 }
 
+function exportSummaryReport() {
+    if (!requireAuth()) return;
+    const date = document.getElementById('reportDate')?.value;
+    const type = document.getElementById('reportType')?.value;
+    if (!date) {
+        showToast('Select a report date first.', 'error');
+        return;
+    }
+    const month = date.substring(0, 7);
+    const transactions = data.transactions
+        .filter(transaction => type === 'daily' ? transaction.date === date : transaction.date?.startsWith(month))
+        .sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id);
+    const rows = [['Date', 'Type', 'PB Number', 'Customer', 'Amount (GHS)', 'Staff'], ...transactions.map(transaction => [
+        transaction.date,
+        transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out',
+        transaction.pbNumber,
+        getCustomerName(transaction.customerId),
+        Number(transaction.amount).toFixed(2),
+        transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy
+    ])];
+    const csv = rows.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const download = document.createElement('a');
+    download.href = url;
+    download.download = `report-${type}-${date}.csv`;
+    download.click();
+    URL.revokeObjectURL(url);
+    showToast('Report saved successfully.', 'success');
+}
+
 function getSelectedReportCustomer() {
     const id = Number(document.getElementById('customerReportSelect')?.value);
     return data.customers.find(customer => customer.id === id);
@@ -218,7 +248,7 @@ function customerReportCsv(customer) {
 }
 
 function exportCustomerReport() {
-    if (!requireManager()) return;
+    if (!requireAuth()) return;
     const customer = getSelectedReportCustomer();
     if (!customer) {
         showToast('Select a customer first.', 'error');
@@ -234,7 +264,7 @@ function exportCustomerReport() {
 }
 
 function emailCustomerReport() {
-    if (!requireManager()) return;
+    if (!requireAuth()) return;
     const customer = getSelectedReportCustomer();
     if (!customer) {
         showToast('Select a customer first.', 'error');

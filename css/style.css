@@ -92,8 +92,8 @@ body.auth-locked > *:not(.auth-screen) {
 .auth-panel {
     position: relative;
     z-index: 2;
-    width: min(100%, 430px);
-    padding: 38px;
+    width: min(100%, 520px);
+    padding: 48px;
     background: #fff;
     border-radius: var(--radius);
     box-shadow: var(--shadow-lg);
@@ -220,7 +220,8 @@ body.auth-locked > *:not(.auth-screen) {
     .auth-scene { top: 0; left: 50%; width: 190px; height: 150px; transform: translateX(-50%) scale(0.72); transform-origin: top center; }
     .auth-ledger { top: 38px; }
     .auth-ground { bottom: 0; }
-    .auth-panel { width: min(100%, 430px); padding: 30px 24px; margin-top: 0; }
+    .auth-panel { width: min(100%, 520px); padding: 30px 24px; margin-top: 0; }
+    .auth-panel h1 { font-size: 27px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -237,7 +238,7 @@ body.auth-locked > *:not(.auth-screen) {
 .auth-panel h1 {
     margin-top: 8px;
     color: var(--gray-900);
-    font-size: 26px;
+    font-size: 32px;
 }
 
 .auth-panel > p {
@@ -261,6 +262,22 @@ body.auth-locked > *:not(.auth-screen) {
     color: var(--gray-600);
     cursor: pointer;
     font: 600 12px var(--font);
+}
+
+.auth-reset {
+    display: block;
+    margin: 14px auto 0;
+    border: 0;
+    background: none;
+    color: var(--accent-dark);
+    cursor: pointer;
+    font: 700 12px var(--font);
+}
+
+.auth-reset:hover,
+.auth-reset:focus-visible {
+    color: var(--gray-900);
+    text-decoration: underline;
 }
 
 .auth-note {
@@ -368,12 +385,13 @@ body.auth-locked > *:not(.auth-screen) {
 }
 
 .sidebar-header .brand {
-    font-size: 18px;
+    min-width: 0;
+    font-size: 15px;
     font-weight: 700;
-    letter-spacing: -0.3px;
-    white-space: nowrap;
+    line-height: 1.2;
 }
 .sidebar-header .brand span {
+    display: block;
     color: var(--accent);
 }
 
@@ -552,15 +570,16 @@ body.auth-locked > *:not(.auth-screen) {
     align-items: baseline;
     gap: 7px;
     margin-right: 4px;
-    color: var(--gray-500);
-    font-size: 12px;
+    color: var(--gray-800);
+    font-size: 13px;
+    font-weight: 800;
 }
 
 .topbar-greeting strong {
     max-width: none;
     color: var(--gray-900);
-    font-size: 13px;
-    font-weight: 800;
+    font-size: 15px;
+    font-weight: 900;
     overflow-wrap: anywhere;
 }
 
