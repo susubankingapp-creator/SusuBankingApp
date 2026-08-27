@@ -23,6 +23,18 @@ The repository includes a server-side API in `server.js` and Vercel routing in `
 
 The login and role controls use Supabase Auth and the database policies enforce access server-side. Keep RLS enabled and never expose the service-role key.
 
+### Administrator access
+
+The database supports three roles: `administrator`, `manager`, and `staff`. Administrators have manager-level monitoring and management access, while staff can record transactions. Create the administrator's user through Supabase Auth, then assign the role to that user's profile from the SQL Editor:
+
+```sql
+update public.profiles
+set role = 'administrator'
+where id = 'AUTH_USER_UUID';
+```
+
+Replace `AUTH_USER_UUID` with the administrator's Auth user ID. Do not add administrator self-signup to the public login screen.
+
 ## Current capabilities
 
 - Customer CRUD with next-of-kin and phone details

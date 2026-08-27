@@ -4,6 +4,7 @@
 
 const AUTH_STORAGE_KEY = 'susu_pinhin_auth';
 const SESSION_STORAGE_KEY = 'susu_pinhin_session';
+const SETUP_COMPLETE_KEY = 'susu_pinhin_setup_complete';
 let authStore = loadAuthStore();
 let currentUser = loadSession();
 let cloudStaffUsers = [];
@@ -35,7 +36,7 @@ function getCurrentUser() {
 }
 
 function isManager() {
-    return Boolean(currentUser && currentUser.role === 'manager');
+    return Boolean(currentUser && ['manager', 'administrator'].includes(currentUser.role));
 }
 
 function isAuthenticated() {
@@ -109,7 +110,8 @@ function hideAuthScreen() {
 }
 
 function setAuthMode(mode) {
-    const hasManager = authStore.users.some(user => user.role === 'manager');
+    const hasManager = authStore.users.some(user => ['manager', 'administrator'].includes(user.role))
+        || localStorage.getItem(SETUP_COMPLETE_KEY) === 'true';
     const setup = mode === 'setup' && !hasManager;
     document.getElementById('authTitle').textContent = setup ? 'Create manager account' : 'Welcome back';
     document.getElementById('authSubtitle').textContent = setup
@@ -141,8 +143,12 @@ async function submitAuth(event) {
             if (mode === 'setup') {
                 const { data: result, error } = await supabaseClient.auth.signUp({ email, password });
                 if (error) throw error;
+                if (!result.session) {
+                    throw new Error('Account created. Confirm your email, then sign in to finish manager setup.');
+                }
                 const { data: profile, error: profileError } = await supabaseClient.rpc('setup_first_manager', { p_full_name: name });
                 if (profileError) throw profileError;
+                localStorage.setItem(SETUP_COMPLETE_KEY, 'true');
                 await setCloudSession(result.session, profile);
                 enterApp();
                 showToast('Manager account created.', 'success');
@@ -191,6 +197,7 @@ async function setCloudSession(session, profile) {
 async function loadCloudProfile(user) {
     const { data: profile, error } = await supabaseClient.from('profiles').select('id, full_name, role, active').eq('id', user.id).single();
     if (error || !profile?.active) throw new Error('Your account is not active.');
+    localStorage.setItem(SETUP_COMPLETE_KEY, 'true');
     await setCloudSession({ user }, profile);
 }
 
@@ -238,9 +245,15 @@ function updateUserIdentity() {
     const name = document.querySelector('.sidebar-footer .name');
     const role = document.querySelector('.sidebar-footer .role');
     const avatar = document.querySelector('.sidebar-footer .avatar');
+    const greeting = document.getElementById('userGreeting');
     if (name) name.textContent = currentUser.name;
-    if (role) role.textContent = currentUser.role === 'manager' ? 'Manager access' : 'Staff access';
+    if (role) role.textContent = currentUser.role === 'administrator' ? 'Administrator access' : currentUser.role === 'manager' ? 'Manager access' : 'Staff access';
     if (avatar) avatar.textContent = currentUser.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+    if (greeting) {
+        const hour = new Date().getHours();
+        const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+        greeting.textContent = `${timeGreeting}, ${currentUser.name}`;
+    }
 }
 
 function applyRoleAccess() {
@@ -357,5 +370,5 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else showAuthScreen('login');
         });
     } else if (isAuthenticated()) enterApp();
-    else showAuthScreen(authStore.users.some(user => user.role === 'manager') ? 'login' : 'setup');
+    else showAuthScreen(authStore.users.some(user => ['manager', 'administrator'].includes(user.role)) ? 'login' : 'setup');
 });

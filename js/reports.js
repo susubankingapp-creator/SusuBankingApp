@@ -148,3 +148,100 @@ function generateReport() {
 
     output.innerHTML = html;
 }
+
+function getSelectedReportCustomer() {
+    const id = Number(document.getElementById('customerReportSelect')?.value);
+    return data.customers.find(customer => customer.id === id);
+}
+
+function populateCustomerReportDropdown() {
+    const select = document.getElementById('customerReportSelect');
+    if (!select) return;
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">— Select customer —</option>';
+    data.customers.forEach(customer => {
+        const option = document.createElement('option');
+        option.value = customer.id;
+        option.textContent = customer.name;
+        select.appendChild(option);
+    });
+    if (data.customers.some(customer => String(customer.id) === currentValue)) select.value = currentValue;
+}
+
+function generateCustomerReport() {
+    const output = document.getElementById('customerReportOutput');
+    if (!output) return;
+    const customer = getSelectedReportCustomer();
+    if (!customer) {
+        output.innerHTML = '<div class="empty-state"><i class="fas fa-user-chart"></i><h3>Select a customer</h3><p>View their contributions, payouts, and current balance.</p></div>';
+        return;
+    }
+    const history = data.transactions.filter(transaction => transaction.customerId === customer.id);
+    const totals = getCustomerTotals(customer.id);
+    const balance = totals.totalIn - totals.totalOut;
+    output.innerHTML = `
+        <div class="customer-report-summary">
+            <div><span class="text-muted fs-small">Customer</span><strong>${escapeHtml(customer.name)}</strong></div>
+            <div><span class="text-muted fs-small">Phone</span><strong>${escapeHtml(customer.phone || '—')}</strong></div>
+            <div><span class="text-muted fs-small">Cash In</span><strong class="text-success">GH₵ ${totals.totalIn.toFixed(2)}</strong></div>
+            <div><span class="text-muted fs-small">Cash Out</span><strong class="text-danger">GH₵ ${totals.totalOut.toFixed(2)}</strong></div>
+            <div><span class="text-muted fs-small">Balance</span><strong class="${balance >= 0 ? 'text-success' : 'text-danger'}">GH₵ ${balance.toFixed(2)}</strong></div>
+        </div>
+        <p class="text-muted fs-small">${history.length} transaction${history.length === 1 ? '' : 's'} recorded.</p>
+    `;
+}
+
+function getCustomerReportRows(customer) {
+    return [
+        ['Customer', customer.name],
+        ['Phone', customer.phone || ''],
+        ['Next of Kin', customer.nextOfKin || ''],
+        [],
+        ['Date', 'Type', 'PB Number', 'Amount (GHS)', 'Staff'],
+        ...data.transactions
+            .filter(transaction => transaction.customerId === customer.id)
+            .sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id)
+            .map(transaction => [
+                transaction.date,
+                transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out',
+                transaction.pbNumber,
+                Number(transaction.amount).toFixed(2),
+                transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy
+            ])
+    ];
+}
+
+function customerReportCsv(customer) {
+    return getCustomerReportRows(customer)
+        .map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+}
+
+function exportCustomerReport() {
+    if (!requireManager()) return;
+    const customer = getSelectedReportCustomer();
+    if (!customer) {
+        showToast('Select a customer first.', 'error');
+        return;
+    }
+    const url = URL.createObjectURL(new Blob([customerReportCsv(customer)], { type: 'text/csv;charset=utf-8' }));
+    const download = document.createElement('a');
+    download.href = url;
+    download.download = `customer-${customer.id}-report-${todayStr()}.csv`;
+    download.click();
+    URL.revokeObjectURL(url);
+    showToast(`Report for ${customer.name} downloaded.`, 'success');
+}
+
+function emailCustomerReport() {
+    if (!requireManager()) return;
+    const customer = getSelectedReportCustomer();
+    if (!customer) {
+        showToast('Select a customer first.', 'error');
+        return;
+    }
+    exportCustomerReport();
+    const subject = `Customer report - ${customer.name}`;
+    const body = `The customer report for ${customer.name} has been downloaded. Please attach the CSV file before sending this email.`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}

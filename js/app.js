@@ -97,6 +97,8 @@ function renderAll() {
     renderCashIn();
     renderCashOut();
     renderBalances();
+    populateCustomerReportDropdown();
+    generateCustomerReport();
     populateCustomerDropdowns();
     populateStaffDropdowns();
     applyRoleAccess();

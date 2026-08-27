@@ -15,15 +15,26 @@
 <body>
 
     <section class="auth-screen" id="authScreen">
+        <div class="auth-scene" aria-hidden="true">
+            <div class="coin coin-one">₵</div>
+            <div class="coin coin-two">₵</div>
+            <div class="auth-ledger">
+                <div class="ledger-top"><span></span><span></span><span></span></div>
+                <div class="ledger-line ledger-line-long"></div>
+                <div class="ledger-line"></div>
+                <div class="ledger-line ledger-line-short"></div>
+                <div class="ledger-check"><i class="fas fa-check"></i></div>
+            </div>
+            <div class="auth-ground"></div>
+        </div>
         <div class="auth-panel">
-            <div class="auth-mark">SP</div>
             <span class="eyebrow">F EMMANUEL 85 VENTURES</span>
             <h1 id="authTitle">Welcome back</h1>
             <p id="authSubtitle">Sign in to continue to your workspace.</p>
             <form id="authForm" onsubmit="submitAuth(event)">
                 <input type="hidden" id="authMode" value="login" />
                 <div class="form-group" id="authNameGroup"><label for="authName">Full name</label><input type="text" id="authName" class="form-control" autocomplete="name" /></div>
-                <div class="form-group"><label for="authUsername">Username</label><input type="text" id="authUsername" class="form-control" autocomplete="username" required /></div>
+                <div class="form-group"><label for="authUsername">Username or email</label><input type="text" id="authUsername" class="form-control" autocomplete="username" required /></div>
                 <div class="form-group"><label for="authPassword">Password</label><div class="password-field"><input type="password" id="authPassword" class="form-control" autocomplete="current-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('authPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
                 <p class="auth-message" id="authMessage" aria-live="polite"></p>
                 <button class="btn btn-accent w-full" id="authSubmit" type="submit">Sign in</button>
@@ -100,6 +111,9 @@
                 <h1 id="pageTitle">Dashboard <small>overview</small></h1>
             </div>
             <div class="topbar-right">
+                <div class="topbar-greeting" aria-live="polite">
+                    <strong id="userGreeting">Welcome back</strong>
+                </div>
                 <span class="date-display" id="todayDate"></span>
                 <button class="btn-icon" data-manager-only onclick="exportData()" title="Export Data">
                     <i class="fas fa-download"></i>
@@ -373,6 +387,33 @@
                             <div class="empty-state">
                                 <i class="fas fa-file-alt"></i>
                                 <h3>Select a date and type to generate report</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card customer-report-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-user-file"></i> Customer Report</h2>
+                        <span class="text-muted fs-small">Export or prepare an email for one customer</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row customer-report-controls">
+                            <div class="form-group">
+                                <label for="customerReportSelect">Customer</label>
+                                <select id="customerReportSelect" class="form-control" onchange="generateCustomerReport()">
+                                    <option value="">— Select customer —</option>
+                                </select>
+                            </div>
+                            <div class="customer-report-actions">
+                                <button class="btn btn-outline" type="button" onclick="exportCustomerReport()"><i class="fas fa-download"></i> Download CSV</button>
+                                <button class="btn btn-accent" type="button" onclick="emailCustomerReport()"><i class="fas fa-envelope"></i> Prepare Email</button>
+                            </div>
+                        </div>
+                        <div id="customerReportOutput">
+                            <div class="empty-state">
+                                <i class="fas fa-user-chart"></i>
+                                <h3>Select a customer</h3>
+                                <p>View their contributions, payouts, and current balance.</p>
                             </div>
                         </div>
                     </div>

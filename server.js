@@ -33,7 +33,7 @@ async function requireUser(req, res, next) {
 }
 
 function managerOnly(req, res, next) {
-    if (req.user.profile.role !== 'manager') return res.status(403).json({ error: 'Manager access required.' });
+    if (!['manager', 'administrator'].includes(req.user.profile.role)) return res.status(403).json({ error: 'Manager or administrator access required.' });
     next();
 }
 

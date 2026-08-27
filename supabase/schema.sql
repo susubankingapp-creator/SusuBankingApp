@@ -8,6 +8,8 @@ exception
     when duplicate_object then null;
 end $$;
 
+alter type public.app_role add value if not exists 'administrator';
+
 do $$
 begin
     create type public.transaction_type as enum ('cashIn', 'cashOut');
@@ -72,7 +74,7 @@ create or replace function public.is_manager()
 returns boolean
 language sql stable security definer set search_path = public
 as $$
-    select public.current_role() = 'manager'::public.app_role;
+    select public.current_role() in ('manager'::public.app_role, 'administrator'::public.app_role);
 $$;
 
 create or replace function public.prevent_role_escalation()
@@ -172,6 +174,46 @@ $$;
 
 grant execute on function public.record_transaction(date, public.transaction_type, integer, bigint, numeric, text, text) to authenticated;
 
+create or replace function public.update_transaction(
+    p_id bigint,
+    p_date date,
+    p_pb_number integer,
+    p_customer_id bigint,
+    p_amount numeric,
+    p_received_by text default null,
+    p_issued_by text default null
+)
+returns public.transactions
+language plpgsql security definer set search_path = public
+as $$
+declare
+    existing public.transactions;
+    result public.transactions;
+    balance numeric;
+begin
+    if not public.is_manager() then raise exception 'Manager access required'; end if;
+    select * into existing from public.transactions where id = p_id for update;
+    if not found then raise exception 'Transaction not found'; end if;
+    if p_amount <= 0 or p_pb_number <= 0 then raise exception 'Invalid transaction values'; end if;
+    if existing.type = 'cashOut' then
+        select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
+        into balance from public.transactions
+        where customer_id = p_customer_id and id <> p_id;
+        if balance < p_amount then raise exception 'Insufficient customer balance'; end if;
+    end if;
+    update public.transactions
+    set date = p_date, pb_number = p_pb_number, customer_id = p_customer_id,
+        amount = p_amount, received_by = p_received_by, issued_by = p_issued_by
+    where id = p_id
+    returning * into result;
+    insert into public.audit_log(actor_id, action, entity, entity_id)
+    values (auth.uid(), 'update', 'transaction', result.id);
+    return result;
+end;
+$$;
+
+grant execute on function public.update_transaction(bigint, date, integer, bigint, numeric, text, text) to authenticated;
+
 create or replace function public.setup_first_manager(p_full_name text)
 returns public.profiles
 language plpgsql security definer set search_path = public
@@ -180,7 +222,9 @@ declare
     result public.profiles;
 begin
     if auth.uid() is null then raise exception 'Authentication required'; end if;
-    if exists (select 1 from public.profiles where role = 'manager') then raise exception 'A manager already exists'; end if;
+    perform pg_advisory_xact_lock(hashtext('susu_first_manager_setup'));
+    if exists (select 1 from public.profiles where role in ('manager', 'administrator')) then raise exception 'A manager already exists'; end if;
+    if char_length(trim(p_full_name)) < 2 then raise exception 'A valid full name is required'; end if;
     insert into public.profiles(id, full_name, role, active)
     values (auth.uid(), trim(p_full_name), 'manager', true)
     returning * into result;
