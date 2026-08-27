@@ -245,14 +245,17 @@ function updateUserIdentity() {
     const name = document.querySelector('.sidebar-footer .name');
     const role = document.querySelector('.sidebar-footer .role');
     const avatar = document.querySelector('.sidebar-footer .avatar');
+    const avatarIcon = avatar?.querySelector('i');
     const greeting = document.getElementById('userGreeting');
+    const timeGreetingElement = document.getElementById('timeGreeting');
     if (name) name.textContent = currentUser.name;
     if (role) role.textContent = currentUser.role === 'administrator' ? 'Administrator access' : currentUser.role === 'manager' ? 'Manager access' : 'Staff access';
-    if (avatar) avatar.textContent = currentUser.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+    if (avatarIcon) avatarIcon.setAttribute('aria-label', `${currentUser.name} profile`);
     if (greeting) {
         const hour = new Date().getHours();
         const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-        greeting.textContent = `${timeGreeting}, ${currentUser.name}`;
+        if (timeGreetingElement) timeGreetingElement.textContent = `${timeGreeting},`;
+        greeting.textContent = currentUser.name;
     }
 }
 

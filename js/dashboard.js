@@ -22,7 +22,7 @@ function updateDashboard() {
     document.getElementById('todayCashOut').textContent = `GH₵ ${todayOut.toFixed(2)}`;
     document.getElementById('todayTransactions').textContent = `${todayTransactions.length} record${todayTransactions.length === 1 ? '' : 's'}`;
     document.getElementById('dashboardStatus').textContent = data.customers.length
-        ? `${data.customers.length} customer${data.customers.length === 1 ? '' : 's'} are being tracked locally.`
+        ? `${data.customers.length} customer${data.customers.length === 1 ? '' : 's'} are being tracked.`
         : 'Add your first customer to begin tracking contributions.';
 
     updateBadges();

@@ -74,7 +74,7 @@ create or replace function public.is_manager()
 returns boolean
 language sql stable security definer set search_path = public
 as $$
-    select public.current_role() in ('manager'::public.app_role, 'administrator'::public.app_role);
+    select public.current_role()::text in ('manager', 'administrator');
 $$;
 
 create or replace function public.prevent_role_escalation()
@@ -223,7 +223,7 @@ declare
 begin
     if auth.uid() is null then raise exception 'Authentication required'; end if;
     perform pg_advisory_xact_lock(hashtext('susu_first_manager_setup'));
-    if exists (select 1 from public.profiles where role in ('manager', 'administrator')) then raise exception 'A manager already exists'; end if;
+    if exists (select 1 from public.profiles where role::text in ('manager', 'administrator')) then raise exception 'A manager already exists'; end if;
     if char_length(trim(p_full_name)) < 2 then raise exception 'A valid full name is required'; end if;
     insert into public.profiles(id, full_name, role, active)
     values (auth.uid(), trim(p_full_name), 'manager', true)

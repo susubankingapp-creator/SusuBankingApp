@@ -59,8 +59,30 @@ body.auth-locked > *:not(.auth-screen) {
     justify-content: center;
     gap: 0;
     padding: 24px;
-    background: radial-gradient(circle at 12% 18%, rgba(245, 158, 11, 0.2), transparent 28%), linear-gradient(135deg, #0b1120, #1e293b);
+    background: radial-gradient(circle at 18% 12%, rgba(45, 212, 191, 0.3), transparent 26%), radial-gradient(circle at 82% 86%, rgba(245, 158, 11, 0.22), transparent 30%), linear-gradient(135deg, #071a2b, #123b4a 52%, #163b36);
     overflow: hidden;
+}
+
+.auth-screen::before,
+.auth-screen::after {
+    position: absolute;
+    inset: -30% 0 0;
+    z-index: 0;
+    pointer-events: none;
+    content: '';
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 2px, transparent 2.5px), radial-gradient(circle, rgba(255, 255, 255, 0.65) 0 1px, transparent 1.8px);
+    background-position: 12px 0, 80px 40px;
+    background-size: 145px 145px, 95px 95px;
+    animation: snowfall 20s linear infinite;
+}
+
+.auth-screen::after {
+    inset: -60% 0 0;
+    opacity: 0.65;
+    background-position: 42px 20px, 5px 70px;
+    background-size: 210px 210px, 135px 135px;
+    animation-duration: 30s;
+    animation-delay: -8s;
 }
 
 .auth-screen.visible {
@@ -87,6 +109,7 @@ body.auth-locked > *:not(.auth-screen) {
     height: 250px;
     transform: translate(calc(-50% + 300px), calc(-50% - 170px));
     opacity: 0.9;
+    pointer-events: none;
 }
 
 .auth-ledger {
@@ -180,6 +203,11 @@ body.auth-locked > *:not(.auth-screen) {
 @keyframes scene-in {
     from { opacity: 0; transform: translateX(-24px); }
     to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes snowfall {
+    from { transform: translate3d(0, -8%, 0); }
+    to { transform: translate3d(28px, 24%, 0); }
 }
 
 @keyframes coin-bob {
@@ -522,19 +550,21 @@ body.auth-locked > *:not(.auth-screen) {
 .topbar-greeting {
     display: flex;
     align-items: baseline;
-    gap: 5px;
+    gap: 7px;
     margin-right: 4px;
     color: var(--gray-500);
     font-size: 12px;
 }
 
 .topbar-greeting strong {
-    max-width: 240px;
-    overflow: hidden;
+    max-width: none;
     color: var(--gray-900);
     font-size: 13px;
     font-weight: 800;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+}
+
+.topbar-greeting span {
     white-space: nowrap;
 }
 

@@ -40,7 +40,7 @@
                 <button class="btn btn-accent w-full" id="authSubmit" type="submit">Sign in</button>
             </form>
             <button class="auth-switch" id="authSwitch" type="button" onclick="setAuthMode('setup')" hidden>Set up the first manager account</button>
-            <small class="auth-note">Accounts and records are secured in Supabase.</small>
+            <small class="auth-note">Private workspace access.</small>
         </div>
     </section>
 
@@ -49,7 +49,7 @@
     ============================================================ -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="logo-icon">SP</div>
+            <div class="logo-icon"><i class="fas fa-landmark"></i></div>
             <div class="brand">F EMMANUEL <span>VENTURES 98</span></div>
         </div>
 
@@ -84,7 +84,7 @@
 
         <div class="sidebar-footer">
             <div class="user">
-                <div class="avatar">SP</div>
+                <div class="avatar"><i class="fas fa-user"></i></div>
                 <div>
                     <div class="name">F EMMANUEL 85 VENTURES</div>
                     <div class="role">Access</div>
@@ -112,7 +112,8 @@
             </div>
             <div class="topbar-right">
                 <div class="topbar-greeting" aria-live="polite">
-                    <strong id="userGreeting">Welcome back</strong>
+                    <span id="timeGreeting">Welcome back</span>
+                    <strong id="userGreeting">there</strong>
                 </div>
                 <span class="date-display" id="todayDate"></span>
                 <button class="btn-icon" data-manager-only onclick="exportData()" title="Export Data">
@@ -160,7 +161,7 @@
                     <div>
                         <span class="eyebrow">Daily operations</span>
                         <h2 id="dashboardGreeting">Good morning</h2>
-                        <p id="dashboardStatus">Your records are stored securely in this browser.</p>
+                        <p id="dashboardStatus">Your operations dashboard is ready.</p>
                     </div>
                     <div class="today-metrics">
                         <div><span>Today in</span><strong id="todayCashIn">GH₵ 0.00</strong></div>
