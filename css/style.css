@@ -1522,3 +1522,391 @@ table tbody tr:last-child td {
 .link-button:hover { color: var(--primary); }
 
 .modal-wide { max-width: 760px; }
+/* ============================================================
+   RESPONSIVE POLISH
+   Layout-only overrides. No application logic or visual theme changes.
+   ============================================================ */
+
+/* Prevent flex/grid children from forcing the viewport wider. */
+.main,
+.page-content,
+.page,
+.card,
+.card-body,
+.card-header,
+.topbar,
+.topbar-left,
+.topbar-right,
+.dashboard-brief,
+.dashboard-brief > div,
+.customer-report-controls,
+.customer-report-controls > *,
+.form-row > *,
+.modal,
+.modal-body {
+    min-width: 0;
+}
+
+/* Tables remain readable while scrolling inside their own container. */
+.table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+    min-width: 640px;
+}
+
+/* Keep action groups usable when space gets tight. */
+.report-actions,
+.customer-report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Medium screens: reduce fixed spacing before switching to mobile navigation. */
+@media (max-width: 1100px) {
+    .page-content {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .topbar {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .dashboard-brief {
+        gap: 18px;
+    }
+
+    .today-metrics {
+        gap: 18px;
+    }
+}
+
+/* Tablets and small laptops. */
+@media (max-width: 900px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: var(--sidebar-width);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main {
+        margin-left: 0;
+    }
+
+    .topbar-left .menu-toggle {
+        display: block;
+    }
+
+    .topbar {
+        padding: 12px 20px;
+    }
+
+    .topbar-left {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .topbar-left h1 {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .topbar-right {
+        flex: 0 1 auto;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .page-content {
+        padding: 22px 20px 32px;
+        max-width: none;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .dashboard-brief {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .today-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .today-metrics div {
+        min-width: 0;
+    }
+
+    .customer-report-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .customer-report-actions {
+        padding-bottom: 0;
+        align-items: center;
+    }
+}
+
+/* Phones. */
+@media (max-width: 600px) {
+    .topbar {
+        align-items: center;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .topbar-left {
+        gap: 6px;
+    }
+
+    .topbar-left .menu-toggle {
+        flex: 0 0 auto;
+        padding: 5px 7px;
+        font-size: 18px;
+    }
+
+    .topbar-left h1 {
+        font-size: 16px;
+    }
+
+    .topbar-left h1 small {
+        display: none;
+    }
+
+    .topbar-right {
+        flex: 0 0 auto;
+        gap: 5px;
+    }
+
+    .topbar-right .date-display {
+        display: none;
+    }
+
+    .topbar-right .btn-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        font-size: 14px;
+    }
+
+    .page-content {
+        padding: 16px 12px 28px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        padding: 14px;
+        border-radius: 12px;
+    }
+
+    .stat-card .label {
+        font-size: 10px;
+        line-height: 1.35;
+    }
+
+    .stat-card .value {
+        font-size: 20px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-brief {
+        padding: 18px;
+        margin-bottom: 18px;
+    }
+
+    .dashboard-brief h2 {
+        font-size: 19px;
+    }
+
+    .dashboard-brief p {
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .today-metrics {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .today-metrics div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .today-metrics span {
+        margin-bottom: 0;
+    }
+
+    .today-metrics strong {
+        font-size: 13px;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    .card {
+        margin-bottom: 16px;
+        border-radius: 12px;
+    }
+
+    .card-header {
+        padding: 13px 14px;
+    }
+
+    .card-header h2 {
+        font-size: 14px;
+    }
+
+    .card-body {
+        padding: 14px;
+    }
+
+    .card-body.p-0 {
+        padding: 0;
+    }
+
+    .flex-between {
+        align-items: stretch;
+    }
+
+    .btn {
+        min-height: 36px;
+        justify-content: center;
+    }
+
+    .report-actions,
+    .customer-report-actions {
+        width: 100%;
+    }
+
+    .report-actions .btn,
+    .customer-report-actions .btn {
+        flex: 1 1 auto;
+    }
+
+    .customer-report-filter {
+        grid-template-columns: 1fr;
+    }
+
+    #customerSearch,
+    #cashinFilterDate,
+    #cashoutFilterDate {
+        width: 100% !important;
+        max-width: none;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .modal-overlay {
+        padding: 10px;
+        align-items: flex-end;
+    }
+
+    .modal,
+    .modal-wide {
+        width: 100%;
+        max-width: none;
+        max-height: calc(100vh - 20px);
+        margin: 0;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .modal-header {
+        padding: 15px 16px;
+    }
+
+    .modal-header h3 {
+        font-size: 16px;
+        padding-right: 8px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-footer {
+        padding: 14px 16px;
+        flex-wrap: wrap;
+    }
+
+    .modal-footer .btn {
+        flex: 1 1 140px;
+    }
+
+    .toast-container {
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        max-width: none;
+        width: auto;
+    }
+
+    .toast {
+        font-size: 13px;
+        padding: 12px 14px;
+    }
+}
+
+/* Very small phones. */
+@media (max-width: 380px) {
+    .topbar-left h1 {
+        font-size: 14px;
+    }
+
+    .topbar-right .btn-icon {
+        width: 31px;
+        height: 31px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card .value {
+        font-size: 22px;
+    }
+
+    .card-header h2 {
+        font-size: 13px;
+    }
+
+    .report-actions .btn,
+    .customer-report-actions .btn,
+    .modal-footer .btn {
+        flex-basis: 100%;
+    }
+}
