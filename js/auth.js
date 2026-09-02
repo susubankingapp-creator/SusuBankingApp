@@ -141,15 +141,40 @@ async function requestPasswordReset() {
 }
 
 async function completePasswordRecovery() {
-    const password = window.prompt('Enter a new password of at least 6 characters:');
-    if (!password) return;
-    if (password.length < 6) {
-        showAuthMessage('The new password must be at least 6 characters.');
+    const authScreen = document.getElementById('authScreen');
+    if (authScreen) { authScreen.classList.add('visible'); document.body.classList.add('auth-locked'); }
+    document.getElementById('authTitle').textContent = 'Set a new password';
+    document.getElementById('authSubtitle').textContent = 'Enter a new password for your account.';
+    document.getElementById('authForm').style.display = 'none';
+    document.getElementById('authReset').hidden = true;
+    const recoveryForm = document.getElementById('recoveryForm');
+    if (recoveryForm) {
+        recoveryForm.reset();
+        recoveryForm.style.display = '';
+    }
+}
+
+async function submitPasswordRecovery(event) {
+    event.preventDefault();
+    const password = document.getElementById('recoveryPassword').value;
+    const confirmPassword = document.getElementById('recoveryConfirmPassword').value;
+    const messageEl = document.getElementById('recoveryMessage');
+    if (password.length < 6 || password !== confirmPassword) {
+        if (messageEl) messageEl.textContent = 'Enter a new password of at least 6 characters and confirm it correctly.';
         return;
     }
     const { error } = await supabaseClient.auth.updateUser({ password });
-    showAuthMessage(error ? cloudError(error, 'Unable to update password.') : 'Password updated. You can now sign in.');
-    if (!error) await supabaseClient.auth.signOut();
+    if (error) {
+        if (messageEl) messageEl.textContent = cloudError(error, 'Unable to update password.');
+        return;
+    }
+    await supabaseClient.auth.signOut();
+    document.getElementById('recoveryForm').style.display = 'none';
+    document.getElementById('authForm').style.display = '';
+    document.getElementById('authReset').hidden = false;
+    history.replaceState(null, '', window.location.pathname);
+    setAuthMode('login');
+    showAuthMessage('Password updated. You can now sign in.');
 }
 
 async function submitAuth(event) {
@@ -495,14 +520,20 @@ function populateStaffDropdowns() {
 document.addEventListener('DOMContentLoaded', async function() {
     await initializeCloud();
     if (cloudReady()) {
+        // A recovery-link session must not silently auto-login; it should only show the new-password form.
+        const isPasswordRecovery = window.location.hash.includes('type=recovery');
         supabaseClient.auth.onAuthStateChange(event => {
             if (event === 'PASSWORD_RECOVERY') completePasswordRecovery();
         });
-        supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-            if (session?.user) {
-                try { await loadCloudProfile(session.user); await enterApp(); } catch (error) { showAuthScreen('login'); showAuthMessage(cloudError(error, 'Unable to load your account.')); }
-            } else showAuthScreen('login');
-        });
+        if (isPasswordRecovery) {
+            showAuthScreen('login');
+        } else {
+            supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+                if (session?.user) {
+                    try { await loadCloudProfile(session.user); await enterApp(); } catch (error) { showAuthScreen('login'); showAuthMessage(cloudError(error, 'Unable to load your account.')); }
+                } else showAuthScreen('login');
+            });
+        }
     } else if (isAuthenticated()) enterApp();
     else showAuthScreen('login');
 });
