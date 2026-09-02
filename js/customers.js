@@ -9,6 +9,8 @@ function openCustomerModal(customerId) {
     form.reset();
     document.getElementById('customerEditId').value = '';
     document.getElementById('customerModalTitle').innerHTML = '<i class="fas fa-user"></i> Add Customer';
+    const openingBalanceGroup = document.getElementById('customerOpeningBalanceGroup');
+    if (openingBalanceGroup) openingBalanceGroup.style.display = customerId ? 'none' : '';
 
     if (customerId) {
         const c = data.customers.find(c => c.id === customerId);
@@ -37,9 +39,15 @@ async function saveCustomer(e) {
     const phone = phoneLocal ? `+233${phoneLocal}` : '';
     const nextOfKinPhone = nextOfKinPhoneLocal ? `+233${nextOfKinPhoneLocal}` : '';
     const ghanaPhone = value => !value || /^\+233[235][0-9]{8}$/.test(value);
+    const openingBalanceRaw = document.getElementById('customerOpeningBalance').value.trim();
+    const openingBalance = openingBalanceRaw ? parseFloat(openingBalanceRaw) : 0;
 
     if (!name || !Number.isInteger(pbNumber) || pbNumber <= 0 || !ghanaPhone(phone) || !ghanaPhone(nextOfKinPhone)) {
         showToast('Enter a valid PB number and Ghana telephone numbers.', 'error');
+        return;
+    }
+    if (isNaN(openingBalance) || openingBalance < 0) {
+        showToast('Enter a valid opening balance of 0 or more.', 'error');
         return;
     }
 
@@ -70,10 +78,30 @@ async function saveCustomer(e) {
             phone,
             createdAt: todayStr()
         };
+        let created;
         if (cloudReady()) {
-            try { data.customers.push(await cloudAddCustomer(customer)); }
+            try { created = await cloudAddCustomer(customer); }
             catch (error) { showToast(cloudError(error, 'Unable to save customer.'), 'error'); return; }
-        } else data.customers.push(customer);
+        } else created = customer;
+        data.customers.push(created);
+
+        if (openingBalance > 0) {
+            const transaction = {
+                id: genId(),
+                date: todayStr(),
+                type: 'cashIn',
+                pbNumber: created.pbNumber,
+                customerId: created.id,
+                amount: openingBalance,
+                receivedBy: getCurrentUser().name,
+                issuedBy: '',
+                createdAt: todayStr()
+            };
+            if (cloudReady()) {
+                try { data.transactions.push(await cloudAddTransaction(transaction)); }
+                catch (error) { showToast(cloudError(error, 'Customer added, but the opening balance could not be recorded.'), 'error'); }
+            } else data.transactions.push(transaction);
+        }
         showToast(`Customer "${name}" added.`, 'success');
     }
 
