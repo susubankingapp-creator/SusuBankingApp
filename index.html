@@ -58,7 +58,7 @@
 
         <nav class="sidebar-nav">
             <div class="nav-label">Main</div>
-            <a class="active" data-page="dashboard" onclick="navigate('dashboard')">
+            <a class="active" data-page="dashboard" data-manager-only onclick="navigate('dashboard')">
                 <i class="fas fa-th-large"></i> Dashboard
             </a>
             <a data-page="customers" onclick="navigate('customers')">
@@ -85,6 +85,9 @@
             </a>
             <a data-page="activity" data-manager-only onclick="navigate('activity')">
                 <i class="fas fa-list-check"></i> Activity Log
+            </a>
+            <a data-page="settings" data-manager-only onclick="navigate('settings')">
+                <i class="fas fa-cog"></i> Settings
             </a>
         </nav>
 
@@ -150,19 +153,8 @@
                         <div class="label">Total Customers</div>
                         <div class="value" id="dashCustomers">0</div>
                     </div>
-                    <div class="stat-card success">
-                        <div class="label">Total Cash In</div>
-                        <div class="value"><span class="currency">GH₵</span><span id="dashCashIn">0.00</span></div>
-                    </div>
-                    <div class="stat-card danger">
-                        <div class="label">Total Cash Out</div>
-                        <div class="value"><span class="currency">GH₵</span><span id="dashCashOut">0.00</span></div>
-                    </div>
-                    <div class="stat-card info">
-                        <div class="label">Net Balance</div>
-                        <div class="value"><span class="currency">GH₵</span><span id="dashBalance">0.00</span></div>
-                    </div>
                 </div>
+                <p class="text-muted fs-small" style="margin:-8px 0 16px;">Cash in, cash out and net balance figures have moved to <a href="#" onclick="navigate('settings');return false;">Settings</a> for privacy.</p>
 
                 <div class="dashboard-brief">
                     <div>
@@ -461,6 +453,51 @@
                 </div>
                 <div class="card"><div class="card-header"><h2><i class="fas fa-list-check"></i> Recent Activity</h2><span class="text-muted fs-small" id="activityTotalLabel">0 entries</span></div>
                     <div class="card-body p-0"><div class="table-wrap"><table><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th></tr></thead><tbody id="activityTableBody"></tbody></table></div></div>
+                </div>
+            </section>
+
+            <!-- ==========================================================
+            SETTINGS (manager only)
+            ========================================================== -->
+            <section class="page" id="page-settings">
+                <div class="flex-between mb-16" style="flex-wrap:wrap;gap:12px;">
+                    <div><h2 class="section-title">Settings</h2><p class="section-description">Financial totals and account rules, kept out of the main dashboard for privacy.</p></div>
+                </div>
+
+                <div class="stats-grid" id="settingsStats">
+                    <div class="stat-card success">
+                        <div class="label">Total Cash In</div>
+                        <div class="value"><span class="currency">GH₵</span><span id="settingsCashIn">0.00</span></div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="label">Total Cash Out</div>
+                        <div class="value"><span class="currency">GH₵</span><span id="settingsCashOut">0.00</span></div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="label">Net Balance</div>
+                        <div class="value"><span class="currency">GH₵</span><span id="settingsBalance">0.00</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-shield-halved"></i> Minimum Balance Rule</h2>
+                        <span class="text-muted fs-small">Applies to every customer</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted fs-small" style="margin-top:0;">Set the amount that must always remain in a customer's account. Cash Out requests that would drop a balance below this value will be blocked automatically for every customer, so you don't need to set it one by one.</p>
+                        <form id="minimumBalanceForm" onsubmit="saveMinimumBalance(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="settingsMinBalance">Minimum balance (GH₵)</label>
+                                    <input type="number" step="0.01" min="0" id="settingsMinBalance" class="form-control" placeholder="0.00" />
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;justify-content:flex-start;">
+                                <button type="submit" class="btn btn-accent"><i class="fas fa-save"></i> Save minimum balance</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </section>
 

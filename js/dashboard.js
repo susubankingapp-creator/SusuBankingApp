@@ -4,9 +4,6 @@
 
 function updateDashboard() {
     document.getElementById('dashCustomers').textContent = data.customers.length;
-    document.getElementById('dashCashIn').textContent = getTotalCashIn().toFixed(2);
-    document.getElementById('dashCashOut').textContent = getTotalCashOut().toFixed(2);
-    document.getElementById('dashBalance').textContent = getNetBalance().toFixed(2);
 
     const todayTransactions = data.transactions.filter(t => t.date === todayStr());
     const todayIn = todayTransactions
@@ -27,6 +24,44 @@ function updateDashboard() {
 
     updateBadges();
     renderRecentTransactions();
+}
+
+// ============================================================
+// SETTINGS (financial totals + minimum balance rule)
+// ============================================================
+
+function renderSettings() {
+    if (!isManager()) return;
+    const cashInEl = document.getElementById('settingsCashIn');
+    const cashOutEl = document.getElementById('settingsCashOut');
+    const balanceEl = document.getElementById('settingsBalance');
+    if (cashInEl) cashInEl.textContent = getTotalCashIn().toFixed(2);
+    if (cashOutEl) cashOutEl.textContent = getTotalCashOut().toFixed(2);
+    if (balanceEl) balanceEl.textContent = getNetBalance().toFixed(2);
+    const minBalanceInput = document.getElementById('settingsMinBalance');
+    if (minBalanceInput) minBalanceInput.value = getMinimumBalance().toFixed(2);
+}
+
+async function saveMinimumBalance(event) {
+    event.preventDefault();
+    if (!requireManager()) return;
+    const input = document.getElementById('settingsMinBalance');
+    const value = parseFloat(input.value);
+    if (isNaN(value) || value < 0) {
+        showToast('Enter a valid minimum balance of 0 or more.', 'error');
+        return;
+    }
+    try {
+        if (cloudReady()) await cloudUpdateMinimumBalance(value);
+        else {
+            data.settings = data.settings || {};
+            data.settings.minimumBalance = value;
+            saveData();
+        }
+        showToast('Minimum balance updated.', 'success');
+    } catch (error) {
+        showToast(cloudError(error, 'Unable to update minimum balance.'), 'error');
+    }
 }
 
 function updateBadges() {

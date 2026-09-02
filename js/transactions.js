@@ -191,8 +191,9 @@ async function saveCashOut(e) {
     const balance = data.transactions
         .filter(t => t.customerId === customerId && t.id !== Number(id))
         .reduce((total, t) => total + (t.type === 'cashIn' ? Number(t.amount) : -Number(t.amount)), 0);
-    if (balance < amount) {
-        showToast(`Insufficient balance for ${getCustomerName(customerId)}. Available: GH₵ ${balance.toFixed(2)}`, 'error');
+    const minimumBalance = getMinimumBalance();
+    if (balance - amount < minimumBalance) {
+        showToast(`This would drop ${getCustomerName(customerId)} below the minimum balance of GH₵ ${minimumBalance.toFixed(2)}. Available to withdraw: GH₵ ${Math.max(0, balance - minimumBalance).toFixed(2)}`, 'error');
         return;
     }
 

@@ -297,7 +297,7 @@ async function enterApp() {
     applyRoleAccess();
     updateUserIdentity();
     renderAll();
-    navigate('dashboard');
+    navigate(isManager() ? 'dashboard' : 'customers');
     resetIdleTimer();
     return true;
 }

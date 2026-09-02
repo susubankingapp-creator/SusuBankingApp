@@ -8,7 +8,8 @@ const STORAGE_KEY = 'susu_pinhin_data';
 function getDefaultData() {
     return {
         customers: [],
-        transactions: [] // { id, customerId, date, type: 'cashIn'|'cashOut', amount, pbNumber, receivedBy, issuedBy }
+        transactions: [], // { id, customerId, date, type: 'cashIn'|'cashOut', amount, pbNumber, receivedBy, issuedBy }
+        settings: { minimumBalance: 0 }
     };
 }
 
@@ -20,6 +21,7 @@ function loadData() {
             const parsed = JSON.parse(raw);
             if (parsed.customers && parsed.transactions) {
                 parsed.customers = parsed.customers.map(customer => ({ ...customer, pbNumber: customer.pbNumber || customer.id }));
+                if (!parsed.settings) parsed.settings = { minimumBalance: 0 };
                 return parsed;
             }
         }
@@ -53,10 +55,11 @@ async function hydrateCloudData() {
     if (transactionError) throw transactionError;
     data = {
         customers: (customers || []).map(customer => ({ id: customer.id, name: customer.name, pbNumber: customer.pb_number, nextOfKin: customer.next_of_kin, nextOfKinPhone: customer.next_of_kin_phone, phone: customer.phone, createdAt: customer.created_at })),
-        transactions: (transactions || []).map(transaction => mapCloudTransaction(transaction))
+        transactions: (transactions || []).map(transaction => mapCloudTransaction(transaction)),
+        settings: { minimumBalance: 0 }
     };
     nextId = getNextId();
-    await refreshCustomerBalances();
+    await Promise.all([refreshCustomerBalances(), refreshMinimumBalance()]);
 }
 
 async function cloudAddCustomer(customer) {
@@ -207,6 +210,26 @@ function getTotalCashOut() {
 
 function getNetBalance() {
     return getTotalCashIn() - getTotalCashOut();
+}
+
+let minimumBalanceCache = null;
+
+async function refreshMinimumBalance() {
+    if (!cloudReady()) { minimumBalanceCache = null; return; }
+    const { data: row, error } = await supabaseClient.from('app_settings').select('minimum_balance').eq('id', true).single();
+    if (error) { console.error(error); return; }
+    minimumBalanceCache = Number(row?.minimum_balance || 0);
+}
+
+async function cloudUpdateMinimumBalance(value) {
+    const { error } = await supabaseClient.from('app_settings').update({ minimum_balance: value }).eq('id', true);
+    if (error) throw error;
+    minimumBalanceCache = value;
+}
+
+function getMinimumBalance() {
+    if (cloudReady()) return Number(minimumBalanceCache || 0);
+    return Number(data.settings?.minimumBalance || 0);
 }
 
 // ============================================================
