@@ -75,6 +75,23 @@ create table if not exists public.audit_log (
     created_at timestamptz not null default now()
 );
 
+-- Singleton row holding app-wide configuration such as the minimum balance rule.
+create table if not exists public.app_settings (
+    id boolean primary key default true,
+    minimum_balance numeric(12, 2) not null default 0 check (minimum_balance >= 0),
+    updated_at timestamptz not null default now(),
+    constraint app_settings_singleton check (id)
+);
+insert into public.app_settings (id, minimum_balance) values (true, 0) on conflict (id) do nothing;
+
+alter table public.app_settings enable row level security;
+drop policy if exists app_settings_read on public.app_settings;
+create policy app_settings_read on public.app_settings for select to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and active = true));
+drop policy if exists app_settings_manager_write on public.app_settings;
+create policy app_settings_manager_write on public.app_settings for update to authenticated
+using (public.is_manager()) with check (public.is_manager());
+
 create index if not exists transactions_date_idx on public.transactions(date desc);
 create index if not exists transactions_customer_idx on public.transactions(customer_id);
 create index if not exists transactions_staff_idx on public.transactions(staff_id);
@@ -191,10 +208,15 @@ begin
     if actor_name is null then
         raise exception 'Active staff account required';
     end if;
+    if p_date is distinct from current_date then
+        raise exception 'New transactions must be recorded for today';
+    end if;
     if p_type = 'cashOut' then
         select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
         into balance from public.transactions where customer_id = p_customer_id;
-        if balance < p_amount then raise exception 'Insufficient customer balance'; end if;
+        if balance - p_amount < (select minimum_balance from public.app_settings where id = true) then
+            raise exception 'This withdrawal would drop the customer below the required minimum balance';
+        end if;
     end if;
     select pb_number into customer_pb from public.customers where id = p_customer_id;
     if customer_pb is null or customer_pb <> p_pb_number then raise exception 'PB number does not match the selected customer'; end if;
@@ -235,6 +257,7 @@ begin
     if actor_name is null then raise exception 'Active administrator account required'; end if;
     select * into existing from public.transactions where id = p_id for update;
     if not found then raise exception 'Transaction not found'; end if;
+    if p_date is distinct from existing.date then raise exception 'Transaction date cannot be changed'; end if;
     if p_amount <= 0 or p_pb_number <= 0 then raise exception 'Invalid transaction values'; end if;
     select pb_number into customer_pb from public.customers where id = p_customer_id;
     if customer_pb is null or customer_pb <> p_pb_number then raise exception 'PB number does not match the selected customer'; end if;
@@ -242,7 +265,9 @@ begin
         select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
         into balance from public.transactions
         where customer_id = p_customer_id and id <> p_id;
-        if balance < p_amount then raise exception 'Insufficient customer balance'; end if;
+        if balance - p_amount < (select minimum_balance from public.app_settings where id = true) then
+            raise exception 'This withdrawal would drop the customer below the required minimum balance';
+        end if;
     end if;
     update public.transactions
     set date = p_date, pb_number = p_pb_number, customer_id = p_customer_id,
