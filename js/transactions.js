@@ -7,7 +7,8 @@ function openCashInModal(transactionId) {
     const form = document.getElementById('cashinForm');
     form.reset();
     document.getElementById('cashinEditId').value = '';
-    document.getElementById('cashinDate').value = todayStr();
+    const dateInput = document.getElementById('cashinDate');
+    dateInput.value = todayStr();
     populateStaffDropdowns();
 
     if (transactionId) {
@@ -21,6 +22,8 @@ function openCashInModal(transactionId) {
             document.getElementById('cashinReceivedBy').value = t.receivedBy || '';
         }
     }
+    dateInput.min = dateInput.value;
+    dateInput.max = dateInput.value;
     populateCustomerDropdowns();
     matchCustomerByPb('cashin');
     openModal('cashinModal');
@@ -36,6 +39,14 @@ async function saveCashIn(e) {
     const amount = parseFloat(document.getElementById('cashinAmount').value);
     const receivedBy = getCurrentUser().name;
     const customer = data.customers.find(item => Number(item.pbNumber || item.id) === Number(pbNumber));
+
+    const expectedDate = id
+        ? data.transactions.find(t => t.id === Number(id) && t.type === 'cashIn')?.date
+        : todayStr();
+    if (!date || date !== expectedDate) {
+        showToast(id ? 'Transaction date cannot be changed.' : 'Cash In date must be today.', 'error');
+        return;
+    }
 
     if (!date || !pbNumber || !customer || customer.id !== customerId || isNaN(amount) || amount <= 0 || !receivedBy) {
         showToast('Enter a valid PB number that matches an existing customer.', 'error');
@@ -152,7 +163,8 @@ function openCashOutModal(transactionId) {
     const form = document.getElementById('cashoutForm');
     form.reset();
     document.getElementById('cashoutEditId').value = '';
-    document.getElementById('cashoutDate').value = todayStr();
+    const dateInput = document.getElementById('cashoutDate');
+    dateInput.value = todayStr();
     populateStaffDropdowns();
 
     if (transactionId) {
@@ -166,6 +178,8 @@ function openCashOutModal(transactionId) {
             document.getElementById('cashoutIssuedBy').value = t.issuedBy || '';
         }
     }
+    dateInput.min = dateInput.value;
+    dateInput.max = dateInput.value;
     populateCustomerDropdowns();
     matchCustomerByPb('cashout');
     openModal('cashoutModal');
@@ -181,6 +195,14 @@ async function saveCashOut(e) {
     const amount = parseFloat(document.getElementById('cashoutAmount').value);
     const issuedBy = getCurrentUser().name;
     const customer = data.customers.find(item => Number(item.pbNumber || item.id) === Number(pbNumber));
+
+    const expectedDate = id
+        ? data.transactions.find(t => t.id === Number(id) && t.type === 'cashOut')?.date
+        : todayStr();
+    if (!date || date !== expectedDate) {
+        showToast(id ? 'Transaction date cannot be changed.' : 'Cash Out date must be today.', 'error');
+        return;
+    }
 
     if (!date || !pbNumber || !customer || customer.id !== customerId || isNaN(amount) || amount <= 0 || !issuedBy) {
         showToast('Enter a valid PB number that matches an existing customer.', 'error');
