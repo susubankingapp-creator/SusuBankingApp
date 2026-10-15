@@ -40,6 +40,7 @@ function renderSettings() {
     if (balanceEl) balanceEl.textContent = getNetBalance().toFixed(2);
     const minBalanceInput = document.getElementById('settingsMinBalance');
     if (minBalanceInput) minBalanceInput.value = getMinimumBalance().toFixed(2);
+    updateInstallButton();
 }
 
 async function saveMinimumBalance(event) {

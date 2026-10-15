@@ -208,13 +208,15 @@ begin
     if actor_name is null then
         raise exception 'Active staff account required';
     end if;
+    -- Serialize writes per customer so rapid duplicate submissions cannot both pass the balance check.
+    perform pg_advisory_xact_lock(hashtext('susu_customer_tx_' || p_customer_id));
     if p_date is distinct from current_date then
         raise exception 'New transactions must be recorded for today';
     end if;
     if p_type = 'cashOut' then
         select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
         into balance from public.transactions where customer_id = p_customer_id;
-        if balance - p_amount < (select minimum_balance from public.app_settings where id = true) then
+        if balance - p_amount < coalesce((select minimum_balance from public.app_settings where id = true), 0) then
             raise exception 'This withdrawal would drop the customer below the required minimum balance';
         end if;
     end if;
@@ -232,6 +234,56 @@ end;
 $$;
 
 grant execute on function public.record_transaction(date, public.transaction_type, integer, bigint, numeric, text, text) to authenticated;
+
+-- Manager-only correction path for entries that could not be recorded on the day.
+-- Requires a past date and a reason; the reason is written to the audit log.
+create or replace function public.record_backdated_transaction(
+    p_date date,
+    p_type public.transaction_type,
+    p_pb_number integer,
+    p_customer_id bigint,
+    p_amount numeric,
+    p_reason text
+)
+returns public.transactions
+language plpgsql security definer set search_path = public
+as $$
+declare
+    result public.transactions;
+    balance numeric;
+    actor_name text;
+    customer_pb integer;
+begin
+    if not public.is_manager() then raise exception 'Manager access required'; end if;
+    select full_name into actor_name from public.profiles where id = auth.uid() and active = true;
+    if actor_name is null then raise exception 'Active administrator account required'; end if;
+    if p_date is null or p_date >= current_date then raise exception 'Backdated entries must use a date before today'; end if;
+    if p_reason is null or char_length(trim(p_reason)) < 3 then raise exception 'A reason is required for backdated entries'; end if;
+    if p_amount <= 0 or p_pb_number <= 0 then raise exception 'Invalid transaction values'; end if;
+    -- Serialize writes per customer so concurrent changes cannot both pass the balance check.
+    perform pg_advisory_xact_lock(hashtext('susu_customer_tx_' || p_customer_id));
+    select pb_number into customer_pb from public.customers where id = p_customer_id;
+    if customer_pb is null or customer_pb <> p_pb_number then raise exception 'PB number does not match the selected customer'; end if;
+    if p_type = 'cashOut' then
+        select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
+        into balance from public.transactions where customer_id = p_customer_id;
+        if balance - p_amount < coalesce((select minimum_balance from public.app_settings where id = true), 0) then
+            raise exception 'This withdrawal would drop the customer below the required minimum balance';
+        end if;
+    end if;
+    insert into public.transactions(date, type, pb_number, customer_id, amount, staff_id, received_by, issued_by)
+    values (p_date, p_type, p_pb_number, p_customer_id, p_amount, auth.uid(),
+        case when p_type = 'cashIn' then actor_name else null end,
+        case when p_type = 'cashOut' then actor_name else null end)
+    returning * into result;
+    insert into public.audit_log(actor_id, action, entity, entity_id, metadata)
+    values (auth.uid(), 'backdate', 'transaction', result.id,
+        jsonb_build_object('reason', trim(p_reason), 'transaction_date', p_date, 'amount', p_amount, 'type', p_type::text));
+    return result;
+end;
+$$;
+
+grant execute on function public.record_backdated_transaction(date, public.transaction_type, integer, bigint, numeric, text) to authenticated;
 
 create or replace function public.update_transaction(
     p_id bigint,
@@ -255,6 +307,8 @@ begin
     if not public.is_manager() then raise exception 'Manager access required'; end if;
     select full_name into actor_name from public.profiles where id = auth.uid() and active = true;
     if actor_name is null then raise exception 'Active administrator account required'; end if;
+    -- Serialize writes per customer so concurrent changes cannot both pass the balance check.
+    perform pg_advisory_xact_lock(hashtext('susu_customer_tx_' || p_customer_id));
     select * into existing from public.transactions where id = p_id for update;
     if not found then raise exception 'Transaction not found'; end if;
     if p_date is distinct from existing.date then raise exception 'Transaction date cannot be changed'; end if;
@@ -265,8 +319,16 @@ begin
         select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
         into balance from public.transactions
         where customer_id = p_customer_id and id <> p_id;
-        if balance - p_amount < (select minimum_balance from public.app_settings where id = true) then
+        if balance - p_amount < coalesce((select minimum_balance from public.app_settings where id = true), 0) then
             raise exception 'This withdrawal would drop the customer below the required minimum balance';
+        end if;
+    end if;
+    if existing.type = 'cashIn' then
+        select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
+        into balance from public.transactions
+        where customer_id = p_customer_id and id <> p_id;
+        if balance + p_amount < coalesce((select minimum_balance from public.app_settings where id = true), 0) then
+            raise exception 'This change would drop the customer below the required minimum balance';
         end if;
     end if;
     update public.transactions
@@ -283,6 +345,51 @@ end;
 $$;
 
 grant execute on function public.update_transaction(bigint, date, integer, bigint, numeric, text, text) to authenticated;
+
+-- Blocks direct table updates/deletes (which bypass the RPC checks) that would
+-- push a customer below the minimum balance.
+create or replace function public.guard_transaction_balance()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+declare
+    min_balance numeric;
+    resulting numeric;
+begin
+    min_balance := coalesce((select minimum_balance from public.app_settings where id = true), 0);
+    if tg_op = 'DELETE' then
+        if old.type = 'cashIn' then
+            select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
+            into resulting from public.transactions
+            where customer_id = old.customer_id and id <> old.id;
+            if resulting < min_balance then
+                raise exception 'Deleting this Cash In would drop the customer below the required minimum balance';
+            end if;
+        end if;
+        return old;
+    end if;
+    select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
+    into resulting from public.transactions
+    where customer_id = new.customer_id and id <> new.id;
+    resulting := resulting + case when new.type = 'cashIn' then new.amount else -new.amount end;
+    if resulting < min_balance then
+        raise exception 'This change would drop the customer below the required minimum balance';
+    end if;
+    if old.customer_id is distinct from new.customer_id then
+        select coalesce(sum(case when type = 'cashIn' then amount else -amount end), 0)
+        into resulting from public.transactions
+        where customer_id = old.customer_id and id <> old.id;
+        if resulting < min_balance then
+            raise exception 'This change would drop the previous customer below the required minimum balance';
+        end if;
+    end if;
+    return new;
+end;
+$$;
+
+drop trigger if exists transactions_balance_guard on public.transactions;
+create trigger transactions_balance_guard before update or delete on public.transactions
+for each row execute function public.guard_transaction_balance();
 
 create or replace function public.setup_first_manager(p_full_name text)
 returns public.profiles

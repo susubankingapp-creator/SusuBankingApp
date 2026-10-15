@@ -79,6 +79,85 @@ function closeModal(id) {
     }
 }
 
+// ============================================================
+// PWA INSTALL
+// ============================================================
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    updateInstallButton();
+});
+
+window.addEventListener('appinstalled', function() {
+    deferredInstallPrompt = null;
+    updateInstallButton();
+    showToast('App installed. You can now open it from your home screen or app list.', 'success');
+});
+
+function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function updateInstallButton() {
+    const buttons = Array.from(document.querySelectorAll('[data-install-app-btn]'));
+    if (buttons.length === 0) return;
+    const hintEls = Array.from(document.querySelectorAll('[data-install-app-hint]'));
+    if (isAppInstalled()) {
+        buttons.forEach(button => {
+            button.disabled = true;
+            const label = button.querySelector('[data-install-app-label]');
+            if (label) label.textContent = 'App installed';
+        });
+        hintEls.forEach(hint => { hint.textContent = 'The app is already installed on this device.'; });
+        return;
+    }
+    buttons.forEach(button => {
+        button.disabled = false;
+        const label = button.querySelector('[data-install-app-label]');
+        if (label) label.textContent = 'Install app';
+    });
+    hintEls.forEach(hint => {
+        hint.textContent = deferredInstallPrompt
+            ? 'Takes a few seconds — the app will appear on your home screen or in your app list.'
+            : 'If no install prompt appears, open your browser menu and choose "Install app" or "Add to Home screen".';
+    });
+}
+
+async function installApp() {
+    if (isAppInstalled()) {
+        showToast('The app is already installed on this device.', 'warning');
+        return;
+    }
+    if (!deferredInstallPrompt) {
+        showToast('Open your browser menu and choose "Install app" or "Add to Home screen".', 'warning');
+        return;
+    }
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    if (choice.outcome === 'accepted') deferredInstallPrompt = null;
+    updateInstallButton();
+}
+
+// ============================================================
+// BRAND LOGOS
+// ============================================================
+
+// Single place to swap brand artwork: 'dark' = for dark surfaces, 'light' = for light surfaces.
+const BRAND_LOGOS = {
+    dark: 'assets/white logo (1).jpg',
+    light: 'assets/blue-black logo.jpg'
+};
+
+function syncBrandLogos() {
+    document.querySelectorAll('img[data-brand-logo]').forEach(img => {
+        const variant = img.getAttribute('data-brand-logo') === 'light' ? 'light' : 'dark';
+        const src = BRAND_LOGOS[variant];
+        if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+    });
+}
+
 // Close modal on overlay click
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -89,6 +168,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    syncBrandLogos();
+    updateInstallButton();
 });
 
 // ============================================================

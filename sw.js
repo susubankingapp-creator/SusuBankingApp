@@ -1,4 +1,4 @@
-const CACHE_NAME = 'f-emmanuel-ventures-v3';
+const CACHE_NAME = 'f-emmanuel-ventures-v8';
 const APP_SHELL = [
     '/',
     '/index.html',
@@ -12,8 +12,13 @@ const APP_SHELL = [
     '/js/reports.js',
     '/js/supabase-client.js',
     '/js/supabase-config.js',
+    '/assets/blue-black%20logo.jpg',
+    '/assets/white%20logo%20(1).jpg',
+    '/assets/login%20image.jpg',
     '/manifest.json',
-    '/icons/app-icon.svg'
+    '/icons/app-icon.svg',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png'
 ];
 
 self.addEventListener('install', event => {

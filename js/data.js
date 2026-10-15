@@ -91,6 +91,16 @@ async function cloudAddTransaction(transaction) {
     return mapCloudTransaction(created);
 }
 
+async function cloudAddBackdatedTransaction(transaction) {
+    const { data: created, error } = await supabaseClient.rpc('record_backdated_transaction', {
+        p_date: transaction.date, p_type: transaction.type, p_pb_number: transaction.pbNumber,
+        p_customer_id: transaction.customerId, p_amount: transaction.amount,
+        p_reason: transaction.backdateReason || null
+    });
+    if (error) throw error;
+    return mapCloudTransaction(created);
+}
+
 function mapCloudTransaction(transaction) {
     return { id: transaction.id, date: transaction.date, type: transaction.type, pbNumber: transaction.pb_number, customerId: transaction.customer_id, amount: Number(transaction.amount), staffId: transaction.staff_id, receivedBy: transaction.received_by || '', issuedBy: transaction.issued_by || '', createdAt: transaction.created_at };
 }

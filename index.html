@@ -19,37 +19,46 @@
 <body>
 
     <section class="auth-screen" id="authScreen">
-        <div class="auth-scene" aria-hidden="true">
-            <div class="coin coin-one">₵</div>
-            <div class="coin coin-two">₵</div>
-            <div class="auth-ledger">
-                <div class="ledger-top"><span></span><span></span><span></span></div>
-                <div class="ledger-line ledger-line-long"></div>
-                <div class="ledger-line"></div>
-                <div class="ledger-line ledger-line-short"></div>
-                <div class="ledger-check"><i class="fas fa-check"></i></div>
+        <div class="auth-card">
+            <div class="auth-panel">
+                <div class="auth-brand">
+                    <img class="auth-logo" data-brand-logo="dark" src="assets/white logo (1).jpg" alt="F EMMANUEL 85 VENTURES logo" />
+                    <span class="auth-brand-name">F EMMANUEL 85 <span>VENTURES</span></span>
+                    <span class="auth-brand-tag">Savings &amp; Loans</span>
+                </div>
+                <h1 id="authTitle">Welcome back</h1>
+                <p id="authSubtitle">Sign in to continue to your workspace.</p>
+                <form id="authForm" onsubmit="submitAuth(event)">
+                    <input type="hidden" id="authMode" value="login" />
+                    <div class="form-group"><label for="authUsername">Email address or staff username</label><input type="text" id="authUsername" class="form-control" autocomplete="username" required /></div>
+                    <div class="form-group"><label for="authPassword">Password</label><div class="password-field"><input type="password" id="authPassword" class="form-control" autocomplete="current-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('authPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
+                    <p class="auth-message" id="authMessage" aria-live="polite"></p>
+                    <button class="btn btn-accent w-full" id="authSubmit" type="submit">Sign in</button>
+                </form>
+                <form id="recoveryForm" onsubmit="submitPasswordRecovery(event)" style="display:none;">
+                    <div class="form-group"><label for="recoveryPassword">New password</label><div class="password-field"><input type="password" id="recoveryPassword" class="form-control" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
+                    <div class="form-group"><label for="recoveryConfirmPassword">Confirm new password</label><div class="password-field"><input type="password" id="recoveryConfirmPassword" class="form-control" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryConfirmPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
+                    <p class="auth-message" id="recoveryMessage" aria-live="polite"></p>
+                    <button class="btn btn-accent w-full" type="submit">Set new password</button>
+                </form>
+                <button class="auth-reset" id="authReset" type="button" onclick="requestPasswordReset()">Forgot password?</button>
+                <small class="auth-note"><i class="fas fa-lock"></i> Private workspace access.</small>
             </div>
-            <div class="auth-ground"></div>
-        </div>
-        <div class="auth-panel">
-            <span class="eyebrow">F EMMANUEL 85 VENTURES</span>
-            <h1 id="authTitle">Welcome back</h1>
-            <p id="authSubtitle">Sign in to continue to your workspace.</p>
-            <form id="authForm" onsubmit="submitAuth(event)">
-                <input type="hidden" id="authMode" value="login" />
-                <div class="form-group"><label for="authUsername">Email address or staff username</label><input type="text" id="authUsername" class="form-control" autocomplete="username" required /></div>
-                <div class="form-group"><label for="authPassword">Password</label><div class="password-field"><input type="password" id="authPassword" class="form-control" autocomplete="current-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('authPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
-                <p class="auth-message" id="authMessage" aria-live="polite"></p>
-                <button class="btn btn-accent w-full" id="authSubmit" type="submit">Sign in</button>
-            </form>
-            <form id="recoveryForm" onsubmit="submitPasswordRecovery(event)" style="display:none;">
-                <div class="form-group"><label for="recoveryPassword">New password</label><div class="password-field"><input type="password" id="recoveryPassword" class="form-control" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
-                <div class="form-group"><label for="recoveryConfirmPassword">Confirm new password</label><div class="password-field"><input type="password" id="recoveryConfirmPassword" class="form-control" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryConfirmPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
-                <p class="auth-message" id="recoveryMessage" aria-live="polite"></p>
-                <button class="btn btn-accent w-full" type="submit">Set new password</button>
-            </form>
-            <button class="auth-reset" id="authReset" type="button" onclick="requestPasswordReset()">Forgot password?</button>
-            <small class="auth-note">Private workspace access.</small>
+            <div class="auth-visual" aria-hidden="true">
+                <img class="auth-visual-img" src="assets/login image.jpg" alt="" />
+                <div class="auth-visual-overlay">
+                    <div class="auth-visual-content">
+                        <span class="auth-visual-eyebrow">F Emmanuel 85 Ventures</span>
+                        <h2>Banking made simple, secure and reliable.</h2>
+                        <p>Daily susu collections, withdrawals and customer balances — managed in one secure workspace your team can trust.</p>
+                        <ul class="auth-visual-points">
+                            <li><i class="fas fa-shield-halved"></i> Secure staff access</li>
+                            <li><i class="fas fa-scale-balanced"></i> Protected balances</li>
+                            <li><i class="fas fa-file-invoice"></i> Instant reports</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -58,7 +67,7 @@
     ============================================================ -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="logo-icon"><i class="fas fa-landmark"></i></div>
+            <div class="logo-icon"><img data-brand-logo="dark" src="assets/white logo (1).jpg" alt="F EMMANUEL 85 VENTURES logo" /></div>
             <div class="brand">F EMMANUEL 85 <span>VENTURES</span></div>
         </div>
 
@@ -92,6 +101,9 @@
             <a data-page="activity" data-manager-only onclick="navigate('activity')">
                 <i class="fas fa-list-check"></i> Activity Log
             </a>
+            <a data-manager-only onclick="openBackdateModal()">
+                <i class="fas fa-calendar-plus"></i> Backdate Entry
+            </a>
             <a data-page="settings" data-manager-only onclick="navigate('settings')">
                 <i class="fas fa-cog"></i> Settings
             </a>
@@ -106,6 +118,9 @@
                 </div>
                 <button class="btn-icon" onclick="openPasswordModal()" title="Change password"><i class="fas fa-key"></i></button>
                 <button class="btn-icon sidebar-logout" onclick="logout()" title="Sign out"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <div class="sidebar-install">
+                <button type="button" class="btn btn-accent w-full" data-install-app-btn onclick="installApp()"><i class="fas fa-download"></i> <span data-install-app-label>Install app</span></button>
             </div>
         </div>
     </aside>
@@ -124,6 +139,7 @@
                 <button class="menu-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
+                <img class="topbar-logo" data-brand-logo="light" src="assets/blue-black logo.jpg" alt="F EMMANUEL 85 VENTURES logo" />
                 <h1 id="pageTitle">Dashboard <small>overview</small></h1>
             </div>
             <div class="topbar-right">
@@ -505,6 +521,18 @@
                         </form>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-download"></i> Install App</h2>
+                        <span class="text-muted fs-small">Add to home screen</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted fs-small" style="margin-top:0;">Install this workspace on your device so it opens straight from your home screen or app list — no browser needed.</p>
+                        <button type="button" class="btn btn-accent" id="installAppBtn" data-install-app-btn onclick="installApp()"><i class="fas fa-download"></i> <span id="installAppBtnLabel" data-install-app-label>Install app</span></button>
+                        <small class="text-muted fs-small" id="installAppHint" data-install-app-hint style="display:block;margin-top:10px;"></small>
+                    </div>
+                </div>
             </section>
 
         </div><!-- /page-content -->
@@ -652,6 +680,58 @@
                     <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;">
                         <button type="button" class="btn btn-outline" onclick="closeModal('cashoutModal')">Cancel</button>
                         <button type="submit" class="btn btn-danger"><i class="fas fa-save"></i> Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backdate Entry Modal (manager only) -->
+    <div class="modal-overlay" id="backdateModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-plus" style="color:var(--accent-dark);"></i> Backdate Entry <span class="text-muted fs-small">Manager only</span></h3>
+                <button class="modal-close" onclick="closeModal('backdateModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="backdateForm" onsubmit="saveBackdate(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Transaction Date <span class="required">*</span></label>
+                            <input type="date" id="backdateDate" class="form-control" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Type <span class="required">*</span></label>
+                            <select id="backdateType" class="form-control" required>
+                                <option value="cashIn">Cash In</option>
+                                <option value="cashOut">Cash Out</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>PB# <span class="required">*</span></label>
+                            <input type="number" id="backdatePb" class="form-control" placeholder="e.g. 81" min="1" required oninput="matchCustomerByPb('backdate')" />
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (GH₵) <span class="required">*</span></label>
+                            <input type="number" step="0.01" id="backdateAmount" class="form-control" placeholder="0.00" required />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Customer <span class="required">*</span></label>
+                        <select id="backdateCustomer" class="form-control customer-select" required disabled>
+                            <option value="">— Select Customer —</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason for backdating <span class="required">*</span></label>
+                        <input type="text" id="backdateReason" class="form-control" placeholder="e.g. Network outage prevented same-day entry" minlength="3" required />
+                        <small class="text-muted fs-small">Saved to the activity log for accountability.</small>
+                    </div>
+                    <div class="modal-footer" style="padding:16px 0 0 0;border-top:none;">
+                        <button type="button" class="btn btn-outline" onclick="closeModal('backdateModal')">Cancel</button>
+                        <button type="submit" class="btn btn-accent"><i class="fas fa-save"></i> Record backdated entry</button>
                     </div>
                 </form>
             </div>

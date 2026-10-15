@@ -248,7 +248,7 @@ function refreshCustomers() {
 
 
 function populateCustomerDropdowns() {
-    const selects = ['cashinCustomer', 'cashoutCustomer'];
+    const selects = ['cashinCustomer', 'cashoutCustomer', 'backdateCustomer'];
     selects.forEach(id => {
         const sel = document.getElementById(id);
         if (!sel) return;

@@ -5,6 +5,7 @@
 // Blocks duplicate submissions while a cloud save is still in flight.
 let savingCashIn = false;
 let savingCashOut = false;
+let savingBackdate = false;
 
 function openCashInModal(transactionId) {
     if (transactionId && !requireManager()) return;
@@ -150,7 +151,7 @@ function renderCashIn() {
         total += Number(t.amount);
         html += `
             <tr>
-                <td>${formatDate(t.date)}</td>
+                <td>${formatDate(t.date)}${backdateFlag(t)}</td>
                 <td><button class="link-button" onclick="showCustomerHistory(${t.customerId})" title="View customer transaction history">#${t.pbNumber}</button></td>
                 <td>${escapeHtml(getCustomerName(t.customerId))}</td>
                 <td class="text-success fw-600">GH₵ ${Number(t.amount).toFixed(2)}</td>
@@ -322,7 +323,7 @@ function renderCashOut() {
         total += Number(t.amount);
         html += `
             <tr>
-                <td>${formatDate(t.date)}</td>
+                <td>${formatDate(t.date)}${backdateFlag(t)}</td>
                 <td><button class="link-button" onclick="showCustomerHistory(${t.customerId})" title="View customer transaction history">#${t.pbNumber}</button></td>
                 <td>${escapeHtml(getCustomerName(t.customerId))}</td>
                 <td class="text-danger fw-600">GH₵ ${Number(t.amount).toFixed(2)}</td>
@@ -346,6 +347,100 @@ function renderCashOut() {
     tbody.innerHTML = html;
     const label = document.getElementById('cashoutTotalLabel');
     if (label) label.textContent = `${transactions.length} transactions`;
+}
+
+// ============================================================
+// BACKDATE ENTRY (manager only)
+// ============================================================
+
+// Marks entries whose transaction date is earlier than the day they were recorded.
+function backdateFlag(t) {
+    const recorded = (t.createdAt || '').slice(0, 10);
+    if (!t.date || !recorded || t.date >= recorded) return '';
+    return ' <span class="backdate-flag" title="Backdated entry — recorded after the transaction date"><i class="fas fa-clock-rotate-left"></i></span>';
+}
+
+function openBackdateModal() {
+    if (!requireManager()) return;
+    const form = document.getElementById('backdateForm');
+    form.reset();
+    // Past dates only — today's entries belong in the normal Cash In/Out forms.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const max = yesterday.toISOString().split('T')[0];
+    const dateInput = document.getElementById('backdateDate');
+    dateInput.value = max;
+    dateInput.max = max;
+    populateCustomerDropdowns();
+    matchCustomerByPb('backdate');
+    openModal('backdateModal');
+}
+
+async function saveBackdate(e) {
+    e.preventDefault();
+    if (!requireManager()) return;
+    if (savingBackdate) return;
+    const date = document.getElementById('backdateDate').value;
+    const type = document.getElementById('backdateType').value;
+    const pbNumber = document.getElementById('backdatePb').value;
+    const customerId = Number(document.getElementById('backdateCustomer').value);
+    const amount = parseFloat(document.getElementById('backdateAmount').value);
+    const reason = document.getElementById('backdateReason').value.trim();
+    const staffName = getCurrentUser().name;
+    const customer = data.customers.find(item => Number(item.pbNumber || item.id) === Number(pbNumber));
+
+    if (!date || date >= todayStr()) {
+        showToast('Backdated entries must use a date before today. Use the normal Cash In/Out forms for today\'s transactions.', 'error');
+        return;
+    }
+    if (!pbNumber || !customer || customer.id !== customerId || isNaN(amount) || amount <= 0 || !staffName) {
+        showToast('Enter a valid PB number that matches an existing customer.', 'error');
+        return;
+    }
+    if (reason.length < 3) {
+        showToast('Give a short reason for this backdated entry.', 'error');
+        return;
+    }
+
+    if (type === 'cashOut') {
+        // A backdated withdrawal still spends from the customer's current balance.
+        const balance = data.transactions
+            .filter(t => t.customerId === customerId)
+            .reduce((total, t) => total + (t.type === 'cashIn' ? Number(t.amount) : -Number(t.amount)), 0);
+        const minimumBalance = getMinimumBalance();
+        if (balance - amount < minimumBalance) {
+            showToast(`This would drop ${getCustomerName(customerId)} below the minimum balance of GH₵ ${minimumBalance.toFixed(2)}. Available to withdraw: GH₵ ${Math.max(0, balance - minimumBalance).toFixed(2)}`, 'error');
+            return;
+        }
+    }
+
+    savingBackdate = true;
+    try {
+        const transaction = {
+            id: genId(),
+            date,
+            type,
+            pbNumber: Number(pbNumber),
+            customerId,
+            amount,
+            receivedBy: type === 'cashIn' ? staffName : '',
+            issuedBy: type === 'cashOut' ? staffName : '',
+            createdAt: todayStr(),
+            backdateReason: reason
+        };
+        if (cloudReady()) {
+            try { data.transactions.push(await cloudAddBackdatedTransaction(transaction)); }
+            catch (error) { showToast(cloudError(error, 'Unable to record backdated entry.'), 'error'); return; }
+        } else data.transactions.push(transaction);
+        saveData();
+        closeModal('backdateModal');
+        renderCashIn();
+        renderCashOut();
+        updateDashboard();
+        showToast(`Backdated ${type === 'cashIn' ? 'Cash In' : 'Cash Out'} of GH₵ ${amount.toFixed(2)} recorded for ${formatDate(date)}.`, 'success');
+    } finally {
+        savingBackdate = false;
+    }
 }
 
 // ============================================================
