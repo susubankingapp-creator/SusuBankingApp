@@ -55,6 +55,7 @@ body.auth-locked > *:not(.auth-screen) {
     inset: 0;
     z-index: 5000;
     display: none;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 24px;
@@ -216,6 +217,7 @@ body.auth-locked > *:not(.auth-screen) {
         min-height: 0;
     }
     .auth-visual { min-height: 230px; }
+    .auth-visual-watermark { display: none; }
     .auth-visual-overlay { padding: 24px; }
     .auth-visual-content h2 { margin-top: 6px; font-size: 20px; }
     .auth-visual-content p,
@@ -512,6 +514,42 @@ body.auth-locked > *:not(.auth-screen) {
     color: var(--accent-dark);
     font-size: 11px;
     cursor: help;
+}
+
+/* Recorded time shown under transaction dates. */
+.tx-time {
+    color: var(--gray-400);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Faint white-logo watermark centered on the dark visual panel. */
+.auth-visual-watermark {
+    position: absolute;
+    top: 36%;
+    left: 50%;
+    width: 240px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    opacity: 0.16;
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+.auth-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 18px auto 4px;
+    color: var(--gray-500);
+    font-size: 11.5px;
+    text-align: center;
+}
+
+.auth-footer .auth-footer-note {
+    color: var(--gray-400);
+    font-size: 10.5px;
 }
 
 /* ============================================================

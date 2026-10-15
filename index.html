@@ -30,14 +30,14 @@
                 <p id="authSubtitle">Sign in to continue to your workspace.</p>
                 <form id="authForm" onsubmit="submitAuth(event)">
                     <input type="hidden" id="authMode" value="login" />
-                    <div class="form-group"><label for="authUsername">Email address or staff username</label><input type="text" id="authUsername" class="form-control" autocomplete="username" required /></div>
-                    <div class="form-group"><label for="authPassword">Password</label><div class="password-field"><input type="password" id="authPassword" class="form-control" autocomplete="current-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('authPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
+                    <div class="form-group"><label for="authUsername">Email address or staff username</label><input type="text" id="authUsername" class="form-control" placeholder="e.g. staff username or name@example.com" autocomplete="username" required /></div>
+                    <div class="form-group"><label for="authPassword">Password</label><div class="password-field"><input type="password" id="authPassword" class="form-control" placeholder="Enter your password" autocomplete="current-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('authPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
                     <p class="auth-message" id="authMessage" aria-live="polite"></p>
                     <button class="btn btn-accent w-full" id="authSubmit" type="submit">Sign in</button>
                 </form>
                 <form id="recoveryForm" onsubmit="submitPasswordRecovery(event)" style="display:none;">
-                    <div class="form-group"><label for="recoveryPassword">New password</label><div class="password-field"><input type="password" id="recoveryPassword" class="form-control" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
-                    <div class="form-group"><label for="recoveryConfirmPassword">Confirm new password</label><div class="password-field"><input type="password" id="recoveryConfirmPassword" class="form-control" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryConfirmPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
+                    <div class="form-group"><label for="recoveryPassword">New password</label><div class="password-field"><input type="password" id="recoveryPassword" class="form-control" placeholder="New password (min. 6 characters)" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
+                    <div class="form-group"><label for="recoveryConfirmPassword">Confirm new password</label><div class="password-field"><input type="password" id="recoveryConfirmPassword" class="form-control" placeholder="Repeat the new password" autocomplete="new-password" minlength="6" required /><button type="button" class="password-toggle" onclick="togglePassword('recoveryConfirmPassword', this)" aria-label="Show password" title="Show password"><i class="fas fa-eye"></i></button></div></div>
                     <p class="auth-message" id="recoveryMessage" aria-live="polite"></p>
                     <button class="btn btn-accent w-full" type="submit">Set new password</button>
                 </form>
@@ -46,6 +46,7 @@
             </div>
             <div class="auth-visual" aria-hidden="true">
                 <img class="auth-visual-img" src="assets/login image.jpg" alt="" />
+                <img class="auth-visual-watermark" src="assets/white logo (1).jpg" alt="" />
                 <div class="auth-visual-overlay">
                     <div class="auth-visual-content">
                         <span class="auth-visual-eyebrow">F Emmanuel 85 Ventures</span>
@@ -60,6 +61,10 @@
                 </div>
             </div>
         </div>
+        <footer class="auth-footer">
+            <span>© 2026 F EMMANUEL 85 VENTURES · Savings &amp; Loans. All rights reserved.</span>
+            <span class="auth-footer-note">Secure staff workspace · Powered by NOVATECH</span>
+        </footer>
     </section>
 
     <!-- ============================================================
