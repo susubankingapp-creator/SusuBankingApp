@@ -2,6 +2,10 @@
 // CASH IN
 // ============================================================
 
+// Blocks duplicate submissions while a cloud save is still in flight.
+let savingCashIn = false;
+let savingCashOut = false;
+
 function openCashInModal(transactionId) {
     if (transactionId && !requireManager()) return;
     const form = document.getElementById('cashinForm');
@@ -32,6 +36,7 @@ function openCashInModal(transactionId) {
 async function saveCashIn(e) {
     e.preventDefault();
     if (!requireAuth()) return;
+    if (savingCashIn) return;
     const id = document.getElementById('cashinEditId').value;
     const date = document.getElementById('cashinDate').value;
     const pbNumber = document.getElementById('cashinPb').value;
@@ -54,45 +59,62 @@ async function saveCashIn(e) {
     }
 
     if (id) {
-        const existing = data.transactions.find(t => t.id === Number(id));
-        if (existing) {
-            const values = { ...existing, date, pbNumber: Number(pbNumber), customerId, amount, receivedBy };
-            let updated;
-            if (cloudReady()) {
-                try {
-                    updated = await cloudUpdateTransaction(existing.id, values);
-                } catch (error) {
-                    showToast(cloudError(error, 'Unable to update Cash In.'), 'error');
-                    return;
-                }
-            } else {
-                updated = values;
-            }
-            data.transactions[data.transactions.indexOf(existing)] = updated;
-            showToast('Cash In updated.', 'success');
+        // Lowering an existing Cash In must not push the customer below the minimum balance.
+        const balanceWithout = data.transactions
+            .filter(t => t.customerId === customerId && t.id !== Number(id))
+            .reduce((total, t) => total + (t.type === 'cashIn' ? Number(t.amount) : -Number(t.amount)), 0);
+        const minimumBalance = getMinimumBalance();
+        if (balanceWithout + amount < minimumBalance) {
+            showToast(`This would drop ${getCustomerName(customerId)} below the minimum balance of GH₵ ${minimumBalance.toFixed(2)}.`, 'error');
+            return;
         }
-    } else {
-        const transaction = {
-            id: genId(),
-            date,
-            type: 'cashIn',
-            pbNumber: Number(pbNumber),
-            customerId,
-            amount,
-            receivedBy: receivedBy || '—',
-            issuedBy: '',
-            createdAt: todayStr()
-        };
-        if (cloudReady()) {
-            try { data.transactions.push(await cloudAddTransaction(transaction)); }
-            catch (error) { showToast(cloudError(error, 'Unable to record cash in.'), 'error'); return; }
-        } else data.transactions.push(transaction);
     }
 
-    saveData();
-    closeModal('cashinModal');
-    renderCashIn();
-    updateDashboard();
+    savingCashIn = true;
+    try {
+        if (id) {
+            const existing = data.transactions.find(t => t.id === Number(id));
+            if (existing) {
+                const values = { ...existing, date, pbNumber: Number(pbNumber), customerId, amount, receivedBy };
+                let updated;
+                if (cloudReady()) {
+                    try {
+                        updated = await cloudUpdateTransaction(existing.id, values);
+                    } catch (error) {
+                        showToast(cloudError(error, 'Unable to update Cash In.'), 'error');
+                        return;
+                    }
+                } else {
+                    updated = values;
+                }
+                data.transactions[data.transactions.indexOf(existing)] = updated;
+                showToast('Cash In updated.', 'success');
+            }
+        } else {
+            const transaction = {
+                id: genId(),
+                date,
+                type: 'cashIn',
+                pbNumber: Number(pbNumber),
+                customerId,
+                amount,
+                receivedBy: receivedBy || '—',
+                issuedBy: '',
+                createdAt: todayStr()
+            };
+            if (cloudReady()) {
+                try { data.transactions.push(await cloudAddTransaction(transaction)); }
+                catch (error) { showToast(cloudError(error, 'Unable to record cash in.'), 'error'); return; }
+            } else data.transactions.push(transaction);
+        }
+
+        saveData();
+        closeModal('cashinModal');
+        renderCashIn();
+        updateDashboard();
+    } finally {
+        savingCashIn = false;
+    }
 }
 
 function renderCashIn() {
@@ -188,6 +210,7 @@ function openCashOutModal(transactionId) {
 async function saveCashOut(e) {
     e.preventDefault();
     if (!requireAuth()) return;
+    if (savingCashOut) return;
     const id = document.getElementById('cashoutEditId').value;
     const date = document.getElementById('cashoutDate').value;
     const pbNumber = document.getElementById('cashoutPb').value;
@@ -219,47 +242,52 @@ async function saveCashOut(e) {
         return;
     }
 
-    if (id) {
-        const existing = data.transactions.find(t => t.id === Number(id));
-        if (existing) {
-            const values = { ...existing, date, pbNumber: Number(pbNumber), customerId, amount, issuedBy };
-            let updated;
-            if (cloudReady()) {
-                try {
-                    updated = await cloudUpdateTransaction(existing.id, values);
-                } catch (error) {
-                    showToast(cloudError(error, 'Unable to update Cash Out.'), 'error');
-                    return;
+    savingCashOut = true;
+    try {
+        if (id) {
+            const existing = data.transactions.find(t => t.id === Number(id));
+            if (existing) {
+                const values = { ...existing, date, pbNumber: Number(pbNumber), customerId, amount, issuedBy };
+                let updated;
+                if (cloudReady()) {
+                    try {
+                        updated = await cloudUpdateTransaction(existing.id, values);
+                    } catch (error) {
+                        showToast(cloudError(error, 'Unable to update Cash Out.'), 'error');
+                        return;
+                    }
+                } else {
+                    updated = values;
                 }
-            } else {
-                updated = values;
+                data.transactions[data.transactions.indexOf(existing)] = updated;
+                showToast('Cash Out updated.', 'success');
             }
-            data.transactions[data.transactions.indexOf(existing)] = updated;
-            showToast('Cash Out updated.', 'success');
+        } else {
+            const transaction = {
+                id: genId(),
+                date,
+                type: 'cashOut',
+                pbNumber: Number(pbNumber),
+                customerId,
+                amount,
+                receivedBy: '',
+                issuedBy: issuedBy || '—',
+                createdAt: todayStr()
+            };
+            if (cloudReady()) {
+                try { data.transactions.push(await cloudAddTransaction(transaction)); }
+                catch (error) { showToast(cloudError(error, 'Unable to record cash out.'), 'error'); return; }
+            } else data.transactions.push(transaction);
+            showToast(`Cash Out of GH₵ ${amount.toFixed(2)} recorded.`, 'success');
         }
-    } else {
-        const transaction = {
-            id: genId(),
-            date,
-            type: 'cashOut',
-            pbNumber: Number(pbNumber),
-            customerId,
-            amount,
-            receivedBy: '',
-            issuedBy: issuedBy || '—',
-            createdAt: todayStr()
-        };
-        if (cloudReady()) {
-            try { data.transactions.push(await cloudAddTransaction(transaction)); }
-            catch (error) { showToast(cloudError(error, 'Unable to record cash out.'), 'error'); return; }
-        } else data.transactions.push(transaction);
-        showToast(`Cash Out of GH₵ ${amount.toFixed(2)} recorded.`, 'success');
-    }
 
-    saveData();
-    closeModal('cashoutModal');
-    renderCashOut();
-    updateDashboard();
+        saveData();
+        closeModal('cashoutModal');
+        renderCashOut();
+        updateDashboard();
+    } finally {
+        savingCashOut = false;
+    }
 }
 
 function renderCashOut() {
@@ -331,6 +359,17 @@ async function deleteTransaction(id, type) {
     }
     const t = data.transactions.find(t => t.id === id);
     if (!t) return;
+    if (t.type === 'cashIn') {
+        // Removing a Cash In must not push the customer below the minimum balance.
+        const balance = data.transactions
+            .filter(x => x.customerId === t.customerId && x.id !== t.id)
+            .reduce((total, x) => total + (x.type === 'cashIn' ? Number(x.amount) : -Number(x.amount)), 0);
+        const minimumBalance = getMinimumBalance();
+        if (balance < minimumBalance) {
+            showToast(`Deleting this Cash In would drop ${getCustomerName(t.customerId)} below the minimum balance of GH₵ ${minimumBalance.toFixed(2)}.`, 'error');
+            return;
+        }
+    }
     if (!confirm(`Delete this ${type === 'cashIn' ? 'Cash In' : 'Cash Out'} record?`)) return;
     try {
         if (cloudReady()) await cloudDeleteTransaction(id);
