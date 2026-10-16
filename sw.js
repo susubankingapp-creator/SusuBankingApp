@@ -1,4 +1,4 @@
-const CACHE_NAME = 'f-emmanuel-ventures-v14';
+const CACHE_NAME = 'f-emmanuel-ventures-v15';
 const APP_SHELL = [
     '/',
     '/index.html',
@@ -17,8 +17,8 @@ const APP_SHELL = [
     '/assets/login%20image.jpg',
     '/manifest.json',
     '/icons/app-icon.svg',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icons/icon-white-192.png',
+    '/icons/icon-white-512.png'
 ];
 
 self.addEventListener('install', event => {
