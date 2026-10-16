@@ -95,7 +95,7 @@ async function saveCustomer(e) {
                 amount: openingBalance,
                 receivedBy: getCurrentUser().name,
                 issuedBy: '',
-                createdAt: todayStr()
+                createdAt: new Date().toISOString()
             };
             if (cloudReady()) {
                 try { data.transactions.push(await cloudAddTransaction(transaction)); }
@@ -272,7 +272,7 @@ function showCustomerHistory(customerId) {
     const history = data.transactions.filter(item => item.customerId === Number(customerId)).sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id);
     const body = document.getElementById('customerHistoryBody');
     document.getElementById('customerHistoryTitle').innerHTML = `<i class="fas fa-user-clock"></i> ${escapeHtml(customer.name)} <span class="text-muted fs-small">${escapeHtml(customer.phone || 'No phone')}</span>`;
-    body.innerHTML = history.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>PB#</th><th>Amount</th></tr></thead><tbody>${history.map(item => `<tr><td>${formatDate(item.date)}</td><td><span class="badge-status ${item.type === 'cashIn' ? 'in' : 'out'}">${item.type === 'cashIn' ? 'Cash In' : 'Cash Out'}</span></td><td>#${item.pbNumber}</td><td class="${item.type === 'cashIn' ? 'text-success' : 'text-danger'} fw-600">GH₵ ${Number(item.amount).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state"><i class="fas fa-inbox"></i><h3>No transactions yet</h3><p>This customer has no transaction history.</p></div>';
+    body.innerHTML = history.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>PB#</th><th>Amount</th></tr></thead><tbody>${history.map(item => `<tr><td>${formatDate(item.date)}${timeTag(item)}</td><td><span class="badge-status ${item.type === 'cashIn' ? 'in' : 'out'}">${item.type === 'cashIn' ? 'Cash In' : 'Cash Out'}</span></td><td>#${item.pbNumber}</td><td class="${item.type === 'cashIn' ? 'text-success' : 'text-danger'} fw-600">GH₵ ${Number(item.amount).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state"><i class="fas fa-inbox"></i><h3>No transactions yet</h3><p>This customer has no transaction history.</p></div>';
     openModal('customerHistoryModal');
 }
 

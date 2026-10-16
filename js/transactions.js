@@ -101,7 +101,7 @@ async function saveCashIn(e) {
                 amount,
                 receivedBy: receivedBy || '—',
                 issuedBy: '',
-                createdAt: todayStr()
+                createdAt: new Date().toISOString()
             };
             if (cloudReady()) {
                 try { data.transactions.push(await cloudAddTransaction(transaction)); }
@@ -151,7 +151,7 @@ function renderCashIn() {
         total += Number(t.amount);
         html += `
             <tr>
-                <td>${formatDate(t.date)}${backdateFlag(t)}</td>
+                <td>${formatDate(t.date)}${timeTag(t)}${backdateFlag(t)}</td>
                 <td><button class="link-button" onclick="showCustomerHistory(${t.customerId})" title="View customer transaction history">#${t.pbNumber}</button></td>
                 <td>${escapeHtml(getCustomerName(t.customerId))}</td>
                 <td class="text-success fw-600">GH₵ ${Number(t.amount).toFixed(2)}</td>
@@ -273,7 +273,7 @@ async function saveCashOut(e) {
                 amount,
                 receivedBy: '',
                 issuedBy: issuedBy || '—',
-                createdAt: todayStr()
+                createdAt: new Date().toISOString()
             };
             if (cloudReady()) {
                 try { data.transactions.push(await cloudAddTransaction(transaction)); }
@@ -323,7 +323,7 @@ function renderCashOut() {
         total += Number(t.amount);
         html += `
             <tr>
-                <td>${formatDate(t.date)}${backdateFlag(t)}</td>
+                <td>${formatDate(t.date)}${timeTag(t)}${backdateFlag(t)}</td>
                 <td><button class="link-button" onclick="showCustomerHistory(${t.customerId})" title="View customer transaction history">#${t.pbNumber}</button></td>
                 <td>${escapeHtml(getCustomerName(t.customerId))}</td>
                 <td class="text-danger fw-600">GH₵ ${Number(t.amount).toFixed(2)}</td>
@@ -425,7 +425,7 @@ async function saveBackdate(e) {
             amount,
             receivedBy: type === 'cashIn' ? staffName : '',
             issuedBy: type === 'cashOut' ? staffName : '',
-            createdAt: todayStr(),
+            createdAt: new Date().toISOString(),
             backdateReason: reason
         };
         if (cloudReady()) {

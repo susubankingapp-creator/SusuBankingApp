@@ -108,7 +108,7 @@ function renderRecentTransactions() {
         const colorClass = t.type === 'cashIn' ? 'text-success' : 'text-danger';
         html += `
             <tr>
-                <td>${formatDate(t.date)}</td>
+                <td>${formatDate(t.date)}${timeTag(t)}</td>
                 <td><span class="badge-status ${badgeClass}">${typeLabel}</span></td>
                 <td>#${t.pbNumber}</td>
                 <td>${escapeHtml(getCustomerName(t.customerId))}</td>
@@ -198,14 +198,15 @@ async function resetAllData() {
 
 function emailExportData() {
     if (!requireManager()) return;
-    const rows = [['Date', 'Type', 'PB Number', 'Customer', 'Amount (GHS)', 'Staff']];
+    const rows = [['Date', 'Type', 'PB Number', 'Customer', 'Amount (GHS)', 'Staff', 'Recorded At']];
     data.transactions.forEach(transaction => rows.push([
         transaction.date,
         transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out',
         transaction.pbNumber,
         getCustomerName(transaction.customerId),
         Number(transaction.amount).toFixed(2),
-        transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy
+        transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy,
+        formatRecordedAt(transaction)
     ]));
     const csv = rowsToCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

@@ -146,6 +146,36 @@ function formatDate(dateStr) {
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
+function formatTime(timestamp) {
+    // Skip legacy date-only values — they carry no real time and would show a bogus 00:00.
+    if (!timestamp || String(timestamp).length <= 10) return '';
+    const d = new Date(timestamp);
+    if (isNaN(d)) return '';
+    let hours = d.getHours();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${String(hours).padStart(2, '0')}:${minutes}:${seconds} ${period}`;
+}
+
+// Small clock tag shown under a transaction's date: when it was actually captured.
+function timeTag(t) {
+    const time = formatTime(t.createdAt);
+    if (!time) return '';
+    return `<br><small class="tx-time" title="Recorded ${formatDate(String(t.createdAt).slice(0, 10))} at ${time}"><i class="fas fa-clock"></i> ${time}</small>`;
+}
+
+// Full date + time used in CSV exports for record keeping.
+function formatRecordedAt(t) {
+    if (!t.createdAt) return '';
+    const d = new Date(t.createdAt);
+    if (isNaN(d)) return '';
+    const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const time = formatTime(t.createdAt);
+    return time ? `${date} ${time}` : date;
+}
+
 function todayStr() {
     return new Date().toISOString().split('T')[0];
 }

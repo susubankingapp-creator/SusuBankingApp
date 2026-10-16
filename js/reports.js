@@ -140,7 +140,7 @@ function generateReport() {
         const staff = t.type === 'cashIn' ? t.receivedBy : t.issuedBy;
         html += `
             <tr>
-                <td>${formatDate(t.date)}</td>
+                <td>${formatDate(t.date)}${timeTag(t)}</td>
                 <td><span class="badge-status ${badgeClass}">${typeLabel}</span></td>
                 <td>#${t.pbNumber}</td>
                 <td>${escapeHtml(getCustomerName(t.customerId))}</td>
@@ -183,13 +183,14 @@ function exportSummaryReport() {
             return transaction.date?.startsWith(month);
         })
         .sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id);
-    const rows = [['Date', 'Type', 'PB Number', 'Customer', 'Amount (GHS)', 'Staff'], ...transactions.map(transaction => [
+    const rows = [['Date', 'Type', 'PB Number', 'Customer', 'Amount (GHS)', 'Staff', 'Recorded At'], ...transactions.map(transaction => [
         transaction.date,
         transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out',
         transaction.pbNumber,
         getCustomerName(transaction.customerId),
         Number(transaction.amount).toFixed(2),
-        transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy
+        transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy,
+        formatRecordedAt(transaction)
     ])];
     const csv = rowsToCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
@@ -229,6 +230,18 @@ function populateCustomerReportDropdown() {
         select.appendChild(option);
     });
     if (data.customers.some(customer => String(customer.id) === currentValue)) select.value = currentValue;
+
+    // Auto-select when the filter pins down one customer, or an exact PB# match.
+    if (filter && customers.length === 1) {
+        select.value = String(customers[0].id);
+        generateCustomerReport();
+    } else if (sort === 'pb' && filter) {
+        const exact = data.customers.find(customer => String(customer.pbNumber || customer.id) === filter);
+        if (exact) {
+            select.value = String(exact.id);
+            generateCustomerReport();
+        }
+    }
 }
 
 function generateCustomerReport() {
@@ -243,7 +256,7 @@ function generateCustomerReport() {
     const totals = getCustomerTotals(customer.id);
     const balance = totals.totalIn - totals.totalOut;
     const rows = history.sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id)
-        .map(transaction => `<tr><td>${formatDate(transaction.date)}</td><td>${transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out'}</td><td>#${transaction.pbNumber}</td><td>GH₵ ${Number(transaction.amount).toFixed(2)}</td><td>${escapeHtml(transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy)}</td></tr>`).join('');
+        .map(transaction => `<tr><td>${formatDate(transaction.date)}${timeTag(transaction)}</td><td>${transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out'}</td><td>#${transaction.pbNumber}</td><td>GH₵ ${Number(transaction.amount).toFixed(2)}</td><td>${escapeHtml(transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy)}</td></tr>`).join('');
     output.innerHTML = `
         <div class="customer-report-summary">
             <div><span class="text-muted fs-small">Customer</span><strong>${escapeHtml(customer.name)}</strong></div>
@@ -263,7 +276,7 @@ function getCustomerReportRows(customer) {
         ['Phone', customer.phone || ''],
         ['Next of Kin', customer.nextOfKin || ''],
         [],
-        ['Date', 'Type', 'PB Number', 'Amount (GHS)', 'Staff'],
+        ['Date', 'Type', 'PB Number', 'Amount (GHS)', 'Staff', 'Recorded At'],
         ...data.transactions
             .filter(transaction => transaction.customerId === customer.id)
             .sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.id - b.id)
@@ -272,7 +285,8 @@ function getCustomerReportRows(customer) {
                 transaction.type === 'cashIn' ? 'Cash In' : 'Cash Out',
                 transaction.pbNumber,
                 Number(transaction.amount).toFixed(2),
-                transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy
+                transaction.type === 'cashIn' ? transaction.receivedBy : transaction.issuedBy,
+                formatRecordedAt(transaction)
             ])
     ];
 }
