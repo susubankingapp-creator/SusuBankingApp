@@ -268,29 +268,86 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function registerAppUpdates() {
-    if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-        registration.update();
-        registration.addEventListener('updatefound', () => {
-            const worker = registration.installing;
-            if (!worker) return;
-            worker.addEventListener('statechange', () => {
-                if (worker.state === 'installed' && navigator.serviceWorker.controller) showUpdateNotice(registration);
-            });
-        });
-    }).catch(() => { /* PWA support is optional when opened as a local file. */ });
-    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+let appUpdateRegistration = null;
+let applyingAppUpdate = false;
+const watchedUpdateWorkers = new WeakSet();
+
+function setAppUpdateState(label, enabled = false) {
+    const button = document.getElementById('appUpdateButton');
+    if (!button) return;
+    button.disabled = !enabled;
+    button.querySelector('span').textContent = label;
 }
 
-function showUpdateNotice(registration) {
+function syncAppUpdateState() {
+    if (applyingAppUpdate) return;
+    if (appUpdateRegistration?.waiting && navigator.serviceWorker.controller) {
+        setAppUpdateState('Update app', true);
+        showUpdateNotice();
+    } else if (appUpdateRegistration?.installing) {
+        setAppUpdateState('Checking for updates');
+    } else {
+        setAppUpdateState('App up to date');
+    }
+}
+
+function watchAppUpdate(worker) {
+    if (!worker || watchedUpdateWorkers.has(worker)) return;
+    watchedUpdateWorkers.add(worker);
+    worker.addEventListener('statechange', syncAppUpdateState);
+}
+
+async function checkForAppUpdates() {
+    if (!appUpdateRegistration || applyingAppUpdate) return;
+    if (appUpdateRegistration.waiting && navigator.serviceWorker.controller) {
+        syncAppUpdateState();
+        return;
+    }
+    setAppUpdateState('Checking for updates');
+    try {
+        await appUpdateRegistration.update();
+        watchAppUpdate(appUpdateRegistration.installing);
+        syncAppUpdateState();
+    } catch (error) {
+        if (appUpdateRegistration.waiting && navigator.serviceWorker.controller) syncAppUpdateState();
+        else setAppUpdateState('Update check unavailable');
+    }
+}
+
+function applyAppUpdate() {
+    const worker = appUpdateRegistration?.waiting;
+    if (!worker || applyingAppUpdate) return;
+    applyingAppUpdate = true;
+    setAppUpdateState('Updating');
+    worker.postMessage({ type: 'SKIP_WAITING' });
+}
+
+function registerAppUpdates() {
+    if (!('serviceWorker' in navigator)) {
+        setAppUpdateState('Updates unavailable');
+        return;
+    }
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+        appUpdateRegistration = registration;
+        registration.addEventListener('updatefound', () => {
+            watchAppUpdate(registration.installing);
+            syncAppUpdateState();
+        });
+        watchAppUpdate(registration.installing);
+        checkForAppUpdates();
+    }).catch(() => setAppUpdateState('Update check unavailable'));
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkForAppUpdates();
+    });
+}
+
+function showUpdateNotice() {
     if (document.getElementById('appUpdateNotice')) return;
     const notice = document.createElement('div');
     notice.id = 'appUpdateNotice';
     notice.className = 'app-update-notice';
     notice.innerHTML = '<span>A new version is ready.</span><button type="button" class="btn btn-accent btn-xs">Update</button>';
-    notice.querySelector('button').addEventListener('click', () => {
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-    });
+    notice.querySelector('button').addEventListener('click', applyAppUpdate);
     document.body.appendChild(notice);
 }

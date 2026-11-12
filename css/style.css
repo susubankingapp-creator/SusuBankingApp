@@ -502,6 +502,19 @@ body.auth-locked > *:not(.auth-screen) {
     justify-content: center;
 }
 
+.sidebar-update {
+    margin-top: 8px;
+}
+
+.sidebar-update:disabled,
+.sidebar-update:disabled:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.65);
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+}
+
 /* White logo artwork blends into any dark surface, so one file works everywhere. */
 .sidebar-header .logo-icon img[data-brand-logo="dark"] {
     mix-blend-mode: screen;

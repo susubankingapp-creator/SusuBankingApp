@@ -46,16 +46,29 @@ function saveData() {
 let data = loadData();
 let nextId = getNextId();
 
+async function fetchAllCloudRows(table, columns, key) {
+    const rows = [];
+    let lastId = null;
+    while (true) {
+        let query = supabaseClient.from(table).select(columns).order(key, { ascending: true }).limit(1000);
+        if (lastId !== null) query = query.gt(key, lastId);
+        const { data: page, error } = await query;
+        if (error) throw error;
+        if (!page?.length) return rows;
+        rows.push(...page);
+        lastId = page[page.length - 1][key];
+    }
+}
+
 async function hydrateCloudData() {
     if (!cloudReady() || !isAuthenticated()) return;
-    const customerQuery = supabaseClient.from('customers').select('id, name, pb_number, next_of_kin, next_of_kin_phone, phone, created_at').order('name');
-    const transactionQuery = supabaseClient.from('transactions').select('id, date, type, pb_number, customer_id, amount, staff_id, received_by, issued_by, created_at').order('date', { ascending: false });
-    const [{ data: customers, error: customerError }, { data: transactions, error: transactionError }] = await Promise.all([customerQuery, transactionQuery]);
-    if (customerError) throw customerError;
-    if (transactionError) throw transactionError;
+    const [customers, transactions] = await Promise.all([
+        fetchAllCloudRows('customers', 'id, name, pb_number, next_of_kin, next_of_kin_phone, phone, created_at', 'id'),
+        fetchAllCloudRows('transactions', 'id, date, type, pb_number, customer_id, amount, staff_id, received_by, issued_by, created_at', 'id')
+    ]);
     data = {
-        customers: (customers || []).map(customer => ({ id: customer.id, name: customer.name, pbNumber: customer.pb_number, nextOfKin: customer.next_of_kin, nextOfKinPhone: customer.next_of_kin_phone, phone: customer.phone, createdAt: customer.created_at })),
-        transactions: (transactions || []).map(transaction => mapCloudTransaction(transaction)),
+        customers: customers.map(customer => ({ id: customer.id, name: customer.name, pbNumber: customer.pb_number, nextOfKin: customer.next_of_kin, nextOfKinPhone: customer.next_of_kin_phone, phone: customer.phone, createdAt: customer.created_at })).sort((first, second) => first.name.localeCompare(second.name)),
+        transactions: transactions.map(transaction => mapCloudTransaction(transaction)),
         settings: { minimumBalance: 0 }
     };
     nextId = getNextId();
@@ -211,10 +224,16 @@ async function refreshCustomerBalances() {
         customerBalanceCache = null;
         return;
     }
-    const { data: rows, error } = await supabaseClient.from('customer_balances').select('customer_id, total_in, total_out, balance');
-    if (error) { console.error(error); return; }
+    let rows;
+    try {
+        rows = await fetchAllCloudRows('customer_balances', 'customer_id, total_in, total_out, balance', 'customer_id');
+    } catch (error) {
+        customerBalanceCache = null;
+        console.error(error);
+        return;
+    }
     const map = new Map();
-    (rows || []).forEach(row => map.set(row.customer_id, { totalIn: Number(row.total_in), totalOut: Number(row.total_out), balance: Number(row.balance) }));
+    rows.forEach(row => map.set(row.customer_id, { totalIn: Number(row.total_in), totalOut: Number(row.total_out), balance: Number(row.balance) }));
     customerBalanceCache = map;
 }
 

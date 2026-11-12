@@ -233,14 +233,15 @@ async function saveCashOut(e) {
         return;
     }
 
-    // Use the server aggregate when available; the downloaded transaction list may be capped.
-    let balance = getCustomerBalance(customerId);
-    const existing = id ? data.transactions.find(t => t.id === Number(id) && t.type === 'cashOut') : null;
-    if (existing?.customerId === customerId) balance += Number(existing.amount);
-    const minimumBalance = getMinimumBalance();
-    if (balance - amount < minimumBalance) {
-        showToast(`This would drop ${getCustomerName(customerId)} below the minimum balance of GH₵ ${minimumBalance.toFixed(2)}. Available to withdraw: GH₵ ${Math.max(0, balance - minimumBalance).toFixed(2)}`, 'error');
-        return;
+    if (!cloudReady()) {
+        let balance = getCustomerBalance(customerId);
+        const existing = id ? data.transactions.find(t => t.id === Number(id) && t.type === 'cashOut') : null;
+        if (existing?.customerId === customerId) balance += Number(existing.amount);
+        const minimumBalance = getMinimumBalance();
+        if (balance - amount < minimumBalance) {
+            showToast(`This would drop ${getCustomerName(customerId)} below the minimum balance of GH₵ ${minimumBalance.toFixed(2)}. Available to withdraw: GH₵ ${Math.max(0, balance - minimumBalance).toFixed(2)}`, 'error');
+            return;
+        }
     }
 
     savingCashOut = true;
@@ -402,7 +403,7 @@ async function saveBackdate(e) {
         return;
     }
 
-    if (type === 'cashOut') {
+    if (type === 'cashOut' && !cloudReady()) {
         // A backdated withdrawal still spends from the customer's current balance.
         const balance = getCustomerBalance(customerId);
         const minimumBalance = getMinimumBalance();
