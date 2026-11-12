@@ -268,6 +268,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function refreshCloudRecords() {
+    if (!requireAuth()) return;
+    if (!cloudReady()) {
+        showToast('Cloud connection unavailable. Records were not refreshed.', 'error');
+        return;
+    }
+    if (!navigator.onLine) {
+        showToast('Connect to the internet to refresh records.', 'error');
+        return;
+    }
+    if (savingCashIn || savingCashOut || savingBackdate) {
+        showToast('Wait for the transaction to finish before refreshing.', 'warning');
+        return;
+    }
+    if (document.querySelector('.modal-overlay.open') && !confirm('Refreshing will close the open form and discard unsaved changes. Continue?')) return;
+    window.location.reload();
+}
+
 let appUpdateRegistration = null;
 let applyingAppUpdate = false;
 const watchedUpdateWorkers = new WeakSet();
