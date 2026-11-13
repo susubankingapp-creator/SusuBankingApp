@@ -502,14 +502,18 @@ body.auth-locked > *:not(.auth-screen) {
     justify-content: center;
 }
 
-.sidebar-update {
-    margin-top: 8px;
+.workspace-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--gray-200);
 }
 
-.sidebar-update:disabled,
-.sidebar-update:disabled:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.65);
+.workspace-actions .btn:disabled,
+.workspace-actions .btn:disabled:hover {
+    background: var(--gray-100);
+    color: var(--gray-600);
     cursor: default;
     transform: none;
     box-shadow: none;

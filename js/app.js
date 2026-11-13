@@ -268,8 +268,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function refreshCloudRecords() {
+let refreshingCloudRecords = false;
+
+async function refreshCloudRecords() {
     if (!requireAuth()) return;
+    if (refreshingCloudRecords) return;
     if (!cloudReady()) {
         showToast('Cloud connection unavailable. Records were not refreshed.', 'error');
         return;
@@ -282,8 +285,24 @@ function refreshCloudRecords() {
         showToast('Wait for the transaction to finish before refreshing.', 'warning');
         return;
     }
-    if (document.querySelector('.modal-overlay.open') && !confirm('Refreshing will close the open form and discard unsaved changes. Continue?')) return;
-    window.location.reload();
+    if (document.querySelector('.modal-overlay.open')) {
+        showToast('Close the open form before refreshing records.', 'warning');
+        return;
+    }
+    refreshingCloudRecords = true;
+    const areas = [document.getElementById('mainContent'), document.getElementById('sidebar')].filter(Boolean);
+    const previousInert = areas.map(area => area.inert);
+    areas.forEach(area => { area.inert = true; });
+    try {
+        await hydrateCloudData();
+        renderAll();
+        showToast('Records refreshed from the cloud.', 'success');
+    } catch (error) {
+        showToast(cloudError(error, 'Unable to refresh records.'), 'error');
+    } finally {
+        areas.forEach((area, index) => { area.inert = previousInert[index]; });
+        refreshingCloudRecords = false;
+    }
 }
 
 let appUpdateRegistration = null;
@@ -337,7 +356,19 @@ function applyAppUpdate() {
     if (!worker || applyingAppUpdate) return;
     applyingAppUpdate = true;
     setAppUpdateState('Updating');
-    worker.postMessage({ type: 'SKIP_WAITING' });
+    try {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+        setTimeout(() => {
+            if (!applyingAppUpdate) return;
+            applyingAppUpdate = false;
+            syncAppUpdateState();
+            showToast('Update could not finish. Close other app tabs and try again.', 'error');
+        }, 20000);
+    } catch (error) {
+        applyingAppUpdate = false;
+        syncAppUpdateState();
+        showToast('Update could not start. Please try again.', 'error');
+    }
 }
 
 function registerAppUpdates() {

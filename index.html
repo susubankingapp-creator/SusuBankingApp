@@ -127,8 +127,6 @@
             </div>
             <div class="sidebar-install">
                 <button type="button" class="btn btn-accent w-full" data-install-app-btn onclick="installApp()"><i class="fas fa-download"></i> <span data-install-app-label>Install app</span></button>
-                <button type="button" class="btn btn-accent w-full sidebar-update" onclick="refreshCloudRecords()"><i class="fas fa-sync-alt"></i> <span>Refresh records</span></button>
-                <button type="button" class="btn btn-accent w-full sidebar-update" id="appUpdateButton" onclick="applyAppUpdate()" disabled aria-live="polite"><i class="fas fa-rotate"></i> <span>Checking for updates</span></button>
             </div>
         </div>
     </aside>
@@ -170,6 +168,11 @@
                 </button>
             </div>
         </header>
+
+        <div class="workspace-actions">
+            <button type="button" class="btn btn-outline btn-sm" onclick="refreshCloudRecords()"><i class="fas fa-sync-alt"></i> Refresh records</button>
+            <button type="button" class="btn btn-accent btn-sm" id="appUpdateButton" onclick="applyAppUpdate()" disabled aria-live="polite"><i class="fas fa-rotate"></i> <span>Checking for updates</span></button>
+        </div>
 
         <!-- PAGE CONTENT -->
         <div class="page-content">
